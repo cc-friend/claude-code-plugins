@@ -1,0 +1,10 @@
+{
+  "name": "hook-observer",
+  "version": "1.0.0",
+  "description": "Real-time dashboard for observing all Claude Code hook events",
+  "author": {
+    "name": "Hook Observer"
+  },
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json"
+}

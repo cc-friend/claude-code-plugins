@@ -1,0 +1,2856 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Claude Code Hook Observer</title>
+<style>
+/* ===== CSS Custom Properties ===== */
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-faint: #484f58;
+  --border: #30363d;
+  --border-light: #21262d;
+  --accent: #D4785A;
+  --accent-hover: #E0927A;
+  --card-bg: #161b22;
+  --card-hover: #1c2128;
+  --input-bg: #0d1117;
+  --input-border: #30363d;
+  --scrollbar-thumb: #30363d;
+  --scrollbar-track: #0d1117;
+  --cat-session: #58a6ff;
+  --cat-tool: #3fb950;
+  --cat-agent: #bc8cff;
+  --cat-stop: #f85149;
+  --cat-error: #f85149;
+  --cat-task: #f0883e;
+  --cat-config: #79c0ff;
+  --cat-mcp: #56d4dd;
+  --cat-notification: #e3b341;
+  --json-key: #58a6ff;
+  --json-string: #a5d6ff;
+  --json-number: #56d4dd;
+  --json-boolean: #f0883e;
+  --json-null: #8b949e;
+  --badge-green-bg: #0d3117;
+  --badge-green-text: #3fb950;
+  --badge-yellow-bg: #3d2e00;
+  --badge-yellow-text: #e3b341;
+  --badge-red-bg: #3d1117;
+  --badge-red-text: #f85149;
+  --overlay-bg: rgba(0,0,0,0.5);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] {
+  --bg: #fefefe;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --text: #1f2328;
+  --text-muted: #363b40;
+  --text-faint: #8b949e;
+  --border: #d0d7de;
+  --border-light: #e8e8e8;
+  --accent: #C06A4A;
+  --accent-hover: #A85A3E;
+  --card-bg: #f6f6f6;
+  --card-hover: #edeff0;
+  --input-bg: #ffffff;
+  --input-border: #d0d7de;
+  --scrollbar-thumb: #d0d7de;
+  --scrollbar-track: #f6f8fa;
+  --cat-session: #0969da;
+  --cat-tool: #1a7f37;
+  --cat-agent: #8250df;
+  --cat-stop: #cf222e;
+  --cat-error: #cf222e;
+  --cat-task: #bc4c00;
+  --cat-config: #0550ae;
+  --cat-mcp: #0e7c86;
+  --cat-notification: #9a6700;
+  --json-key: #0550ae;
+  --json-string: #0a3069;
+  --json-number: #0e7c86;
+  --json-boolean: #bc4c00;
+  --json-null: #656d76;
+  --badge-green-bg: #dafbe1;
+  --badge-green-text: #1a7f37;
+  --badge-yellow-bg: #fff8c5;
+  --badge-yellow-text: #9a6700;
+  --badge-red-bg: #ffebe9;
+  --badge-red-text: #cf222e;
+  --overlay-bg: rgba(0,0,0,0.15);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, 'Liberation Mono', monospace;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* ===== Layout ===== */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 280px 1fr;
+  height: 100vh;
+}
+
+/* ===== Header ===== */
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  min-height: 44px;
+  transition: background 0.2s;
+}
+
+.header-title {
+  font-size: 1.154rem;
+  font-weight: 700;
+  color: #D4785A;
+  white-space: nowrap;
+  letter-spacing: -0.3px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  margin-left: 8px;
+}
+
+.header-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.923rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.header-stat .stat-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.header-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.923rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  gap: 4px;
+}
+
+.header-btn:hover {
+  background: var(--card-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.header-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.connection-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat-tool);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.connection-indicator.error {
+  background: var(--cat-error);
+  animation: pulse-error 1.5s infinite;
+}
+
+@keyframes pulse-error {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  grid-row: 2;
+  grid-column: 1;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s;
+}
+
+.sidebar-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sidebar-section-title {
+  font-size: 0.846rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.923rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Filter groups */
+.filter-group {
+  margin-bottom: 8px;
+}
+
+.filter-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.923rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+
+.filter-group-header:hover {
+  color: var(--text);
+}
+
+.filter-group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.filter-checkbox-list {
+  padding-left: 14px;
+  margin-top: 2px;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 0.923rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.filter-item:hover {
+  color: var(--text);
+}
+
+.filter-item input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  background: var(--input-bg);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.filter-item input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.filter-item input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.filter-item .count {
+  margin-left: auto;
+  font-size: 0.846rem;
+  color: var(--text-faint);
+}
+
+/* Sidebar stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.stat-card .stat-number {
+  font-size: 1.385rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-card .stat-label {
+  font-size: 0.769rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+.tool-bar-chart {
+  margin-top: 8px;
+}
+
+.tool-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.846rem;
+}
+
+.tool-bar-name {
+  width: 70px;
+  text-align: right;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tool-bar-track {
+  flex: 1;
+  height: 12px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tool-bar-fill {
+  height: 100%;
+  background: var(--cat-tool);
+  border-radius: 3px;
+  transition: width 0.3s;
+  min-width: 2px;
+}
+
+.tool-bar-count {
+  width: 28px;
+  text-align: left;
+  color: var(--text-faint);
+  font-size: 0.769rem;
+  flex-shrink: 0;
+}
+
+/* Dynamic filter lists */
+.dynamic-filter-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* ===== Main Area ===== */
+.main-area {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ===== Timeline ===== */
+.timeline-container {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  min-height: 0;
+}
+
+.timeline {
+  padding: 8px;
+}
+
+.timeline-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--text-faint);
+  font-size: 1.077rem;
+  gap: 8px;
+}
+
+.timeline-empty-icon {
+  font-size: 2.462rem;
+  opacity: 0.4;
+}
+
+/* New events badge */
+.new-events-badge {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.923rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  display: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.new-events-badge:hover {
+  background: var(--accent-hover);
+  transform: translateX(-50%) scale(1.05);
+}
+
+.new-events-badge.visible {
+  display: block;
+  animation: badge-slide-in 0.2s ease-out;
+}
+
+@keyframes badge-slide-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ===== Event Card ===== */
+.event-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  margin-bottom: 2px;
+  background: var(--card-bg);
+  border-left: 4px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.event-card:hover {
+  background: var(--card-hover);
+}
+
+.event-card.selected {
+  background: var(--card-hover);
+  border-left-color: var(--accent);
+}
+
+.event-card-row1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-icon {
+  font-size: 1.077rem;
+  width: 18px;
+  height: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.event-name {
+  font-size: 0.923rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1em;
+}
+
+.event-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.769rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-tool {
+  background: var(--bg-tertiary);
+  color: var(--cat-tool);
+  border: 1px solid var(--border-light);
+}
+
+.badge-duration {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-duration.fast {
+  background: var(--badge-green-bg);
+  color: var(--badge-green-text);
+}
+
+.badge-duration.medium {
+  background: var(--badge-yellow-bg);
+  color: var(--badge-yellow-text);
+}
+
+.badge-duration.slow {
+  background: var(--badge-red-bg);
+  color: var(--badge-red-text);
+}
+
+.event-timestamp {
+  font-size: 0.846rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.event-summary {
+  font-size: 0.923rem;
+  color: var(--text-muted);
+  padding-left: 26px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2em;
+}
+
+/* ===== Detail Panel ===== */
+.detail-panel {
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+  overflow: hidden;
+  transition: height 0.25s ease, background 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-panel.collapsed {
+  height: 0 !important;
+  border-top: none;
+}
+
+.detail-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.detail-panel-title {
+  font-size: 1.077rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.detail-panel-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.231rem;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.detail-panel-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text);
+}
+
+.detail-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section-title {
+  font-size: 0.846rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-field {
+  margin-bottom: 8px;
+}
+
+.detail-field-label {
+  font-size: 0.923rem;
+  font-weight: 600;
+  color: var(--text);
+  display: inline;
+}
+
+.detail-field-desc {
+  font-size: 0.846rem;
+  color: var(--text-faint);
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.detail-field-value {
+  font-size: 0.923rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.detail-field-value.copyable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.detail-field-value.copyable:hover {
+  color: var(--accent);
+}
+
+.copy-icon {
+  font-size: 0.846rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.detail-field-value.copyable:hover .copy-icon {
+  opacity: 1;
+}
+
+/* Collapsible sections */
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+  font-size: 0.923rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+
+.collapsible-header:hover {
+  color: var(--text);
+}
+
+.collapsible-arrow {
+  font-size: 0.769rem;
+  transition: transform 0.15s;
+  width: 14px;
+  text-align: center;
+}
+
+.collapsible-header.expanded .collapsible-arrow {
+  transform: rotate(90deg);
+}
+
+.collapsible-body {
+  display: none;
+  margin-top: 4px;
+}
+
+.collapsible-body.expanded {
+  display: block;
+  animation: expand-fade 0.15s ease-out;
+}
+
+@keyframes expand-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* JSON block */
+.json-block-wrapper {
+  position: relative;
+}
+
+.json-block {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-size: 0.923rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.copy-btn-inside {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.846rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  z-index: 2;
+  opacity: 0;
+}
+
+.json-block-wrapper:hover .copy-btn-inside {
+  opacity: 1;
+}
+
+.copy-btn-inside:hover {
+  background: var(--card-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.copy-btn-inside.copied {
+  color: var(--cat-tool);
+  border-color: var(--cat-tool);
+  opacity: 1;
+}
+
+.json-block .jk { color: var(--json-key); }
+.json-block .js { color: var(--json-string); }
+.json-block .jn { color: var(--json-number); }
+.json-block .jb { color: var(--json-boolean); }
+.json-block .jl { color: var(--json-null); }
+
+.raw-json-section {
+  margin-top: 12px;
+}
+
+.copy-btn {
+  padding: 3px 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.846rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.copy-btn:hover {
+  background: var(--card-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.copy-btn.copied {
+  color: var(--cat-tool);
+  border-color: var(--cat-tool);
+}
+
+/* Detail panel resize handle */
+.detail-resize-handle {
+  height: 4px;
+  cursor: ns-resize;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.detail-resize-handle:hover {
+  background: var(--accent);
+}
+
+/* Error badge in detail */
+.error-text {
+  color: var(--cat-error);
+  font-weight: 600;
+}
+
+/* ===== Empty / Loading States ===== */
+.detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-faint);
+  font-size: 1rem;
+}
+
+/* ===== Content Block (for prompt, last_assistant_message) ===== */
+.content-block {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.content-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-light);
+  min-height: 30px;
+}
+
+.content-block-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.content-tab {
+  padding: 2px 10px;
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.846rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.content-tab:hover {
+  color: var(--text);
+}
+
+.content-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.content-block-body {
+  padding: 10px 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 0.923rem;
+  line-height: 1.6;
+}
+
+.content-block-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.923rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.content-tab-panel {
+  display: none;
+}
+
+.content-tab-panel.active {
+  display: block;
+}
+
+/* Markdown rendered content */
+.md-content h1, .md-content h2, .md-content h3,
+.md-content h4, .md-content h5, .md-content h6 {
+  color: var(--text);
+  margin: 8px 0 4px;
+  line-height: 1.3;
+}
+.md-content h1 { font-size: 1.231rem; }
+.md-content h2 { font-size: 1.077rem; }
+.md-content h3 { font-size: 1rem; }
+.md-content h4, .md-content h5, .md-content h6 { font-size: 0.923rem; }
+.md-content strong { color: var(--text); }
+.md-content em { font-style: italic; }
+.md-content code {
+  background: var(--bg-tertiary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.846rem;
+}
+.md-content pre {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 8px;
+  overflow-x: auto;
+  margin: 6px 0;
+}
+.md-content pre code {
+  background: none;
+  padding: 0;
+}
+.md-content li {
+  margin-left: 16px;
+  list-style: disc;
+}
+.md-content a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.md-content a:hover {
+  text-decoration: underline;
+}
+.md-content p {
+  margin: 4px 0;
+}
+.md-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+.md-content blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  color: var(--text-muted);
+  margin: 6px 0;
+}
+.md-content ol {
+  margin-left: 16px;
+  list-style: decimal;
+}
+
+/* Copyable detail field */
+.detail-field-value.copyable-field {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.15s;
+  width: fit-content;
+}
+
+.detail-field-value.copyable-field:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.detail-field-value.copyable-field .copy-hint {
+  font-size: 0.769rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: var(--text-faint);
+}
+
+.detail-field-value.copyable-field:hover .copy-hint {
+  opacity: 1;
+}
+
+/* ===== Extracted Fields (recursive tool input/response) ===== */
+.extracted-fields-container {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.extracted-field {
+  margin-bottom: 2px;
+}
+
+.extracted-field-key {
+  font-size: 0.923rem;
+  font-weight: 600;
+  color: var(--json-key);
+  display: inline;
+}
+
+.extracted-field-meta {
+  font-weight: 400;
+  font-size: 0.846rem;
+  color: var(--text-faint);
+}
+
+.extracted-field-value {
+  font-size: 0.923rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  word-break: break-all;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.15s;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.extracted-field-value:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.extracted-field-value .copy-hint {
+  font-size: 0.769rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.extracted-field-value:hover .copy-hint {
+  opacity: 1;
+}
+
+/* Long text block for values >200 chars */
+.extracted-field-longtext {
+  position: relative;
+  margin-top: 2px;
+}
+
+.extracted-field-longtext-content {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.923rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.extracted-field-longtext .copy-btn-inside {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  opacity: 0;
+}
+
+.extracted-field-longtext:hover .copy-btn-inside {
+  opacity: 1;
+}
+
+.extracted-field-nested {
+  margin-left: 16px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-light);
+}
+
+/* ===== Markdown table ===== */
+.md-content table {
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 0.923rem;
+  width: 100%;
+}
+
+.md-content th,
+.md-content td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.md-content th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.md-content td {
+  color: var(--text-muted);
+}
+
+/* ===== Mobile responsive ===== */
+@media (max-width: 768px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .sidebar {
+    grid-row: 2;
+    grid-column: 1;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .main-area {
+    grid-row: 3;
+    grid-column: 1;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .header-stats {
+    order: 10;
+    flex-basis: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-controls {
+    margin-left: auto;
+  }
+
+  .header-title {
+    font-size: 1rem;
+  }
+
+  .detail-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    max-height: 70vh;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  }
+
+  .sidebar-section {
+    padding: 8px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .stat-card {
+    padding: 4px;
+  }
+
+  .stat-card .stat-number {
+    font-size: 1.077rem;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.692rem;
+  }
+
+  .tool-bar-chart {
+    display: none;
+  }
+
+  .sidebar-section:nth-child(n+3) {
+    display: none;
+  }
+
+  .event-summary {
+    padding-left: 0;
+  }
+
+  .json-block {
+    font-size: 0.846rem;
+  }
+
+  .content-block-body {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-btn span:not(#themeIcon) {
+    display: none;
+  }
+
+  .header-stat {
+    font-size: 0.846rem;
+  }
+
+  .event-card {
+    padding: 6px 8px;
+  }
+
+  .event-name {
+    font-size: 0.846rem;
+  }
+
+  .badge {
+    font-size: 0.692rem;
+    padding: 1px 4px;
+  }
+}
+
+/* ===== Utility ===== */
+.hidden { display: none !important; }
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="connection-indicator" id="connectionIndicator" title="Connected"></div>
+    <div class="header-title"><svg style="width:22px;height:22px;flex-shrink:0;vertical-align:middle;margin-right:6px" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#D4785A"/><path d="M6 16s4.5-7 10-7 10 7 10 7-4.5 7-10 7S6 16 6 16z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="16" r="3.5" fill="#fff"/><circle cx="16" cy="16" r="1.5" fill="#D4785A"/></svg>Claude Code Hook Observer</div>
+    <div class="header-stats">
+      <div class="header-stat">Events: <span class="stat-value" id="statTotalEvents">0</span></div>
+      <div class="header-stat">Sessions: <span class="stat-value" id="statSessions">0</span></div>
+      <div class="header-stat">Tools: <span class="stat-value" id="statToolCalls">0</span></div>
+      <div class="header-stat">Errors: <span class="stat-value" id="statErrors">0</span></div>
+    </div>
+    <div class="header-controls">
+      <button class="header-btn" id="btnTheme" title="Toggle theme">
+        <span id="themeIcon">&#9789;</span>
+      </button>
+      <button class="header-btn" id="btnExport" title="Export events">&#8615; Export</button>
+      <button class="header-btn" id="btnClear" title="Clear all events">&#10005; Clear</button>
+      <button class="header-btn" id="btnAutoScroll" title="Toggle auto-scroll">&#8613; Auto</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Search -->
+    <div class="sidebar-section">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search events..." />
+    </div>
+
+    <!-- Stats -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Quick Stats</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="sidebarStatTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="sidebarStatSessions">0</div>
+          <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="sidebarStatTools">0</div>
+          <div class="stat-label">Tool Calls</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="sidebarStatErrors">0</div>
+          <div class="stat-label">Errors</div>
+        </div>
+      </div>
+      <div class="tool-bar-chart" id="toolBarChart"></div>
+    </div>
+
+    <!-- Event Type Filters -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Event Types</div>
+      <div id="eventTypeFilters"></div>
+    </div>
+
+    <!-- Tool Name Filters -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Tool Names</div>
+      <div class="dynamic-filter-list" id="toolNameFilters">
+        <div style="font-size:0.846rem;color:var(--text-faint);padding:4px 0;">No tool events yet</div>
+      </div>
+    </div>
+
+    <!-- Session Filters -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Sessions</div>
+      <div class="dynamic-filter-list" id="sessionFilters">
+        <div style="font-size:0.846rem;color:var(--text-faint);padding:4px 0;">No sessions yet</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <!-- Timeline -->
+    <div class="timeline-container" id="timelineContainer">
+      <div class="new-events-badge" id="newEventsBadge"></div>
+      <div class="timeline" id="timeline">
+        <div class="timeline-empty" id="timelineEmpty">
+          <div class="timeline-empty-icon">&#9673;</div>
+          <div>Waiting for events...</div>
+          <div style="font-size:0.923rem;color:var(--text-faint);">Events will appear here as hooks fire</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel collapsed" id="detailPanel">
+      <div class="detail-resize-handle" id="detailResizeHandle"></div>
+      <div class="detail-panel-header">
+        <div class="detail-panel-title" id="detailTitle">Event Details</div>
+        <button class="detail-panel-close" id="detailClose" title="Close">&#10005;</button>
+      </div>
+      <div class="detail-panel-body" id="detailBody">
+        <div class="detail-empty">Select an event to view details</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === marked.js v15.0.12 (MIT) - inlined ===
+/**
+ * marked v15.0.12 - a markdown parser
+ * Copyright (c) 2011-2025, Christopher Jeffrey. (MIT Licensed)
+ * https://github.com/markedjs/marked
+ */
+
+/**
+ * DO NOT EDIT THIS FILE
+ * The code in this file is generated from files in ./src/
+ */
+(function(g,f){if(typeof exports=="object"&&typeof module<"u"){module.exports=f()}else if("function"==typeof define && define.amd){define("marked",f)}else {g["marked"]=f()}}(typeof globalThis < "u" ? globalThis : typeof self < "u" ? self : this,function(){var exports={};var __exports=exports;var module={exports};
+"use strict";var H=Object.defineProperty;var be=Object.getOwnPropertyDescriptor;var Te=Object.getOwnPropertyNames;var we=Object.prototype.hasOwnProperty;var ye=(l,e)=>{for(var t in e)H(l,t,{get:e[t],enumerable:!0})},Re=(l,e,t,n)=>{if(e&&typeof e=="object"||typeof e=="function")for(let s of Te(e))!we.call(l,s)&&s!==t&&H(l,s,{get:()=>e[s],enumerable:!(n=be(e,s))||n.enumerable});return l};var Se=l=>Re(H({},"__esModule",{value:!0}),l);var kt={};ye(kt,{Hooks:()=>L,Lexer:()=>x,Marked:()=>E,Parser:()=>b,Renderer:()=>$,TextRenderer:()=>_,Tokenizer:()=>S,defaults:()=>w,getDefaults:()=>z,lexer:()=>ht,marked:()=>k,options:()=>it,parse:()=>pt,parseInline:()=>ct,parser:()=>ut,setOptions:()=>ot,use:()=>lt,walkTokens:()=>at});module.exports=Se(kt);function z(){return{async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null}}var w=z();function N(l){w=l}var I={exec:()=>null};function h(l,e=""){let t=typeof l=="string"?l:l.source,n={replace:(s,i)=>{let r=typeof i=="string"?i:i.source;return r=r.replace(m.caret,"$1"),t=t.replace(s,r),n},getRegex:()=>new RegExp(t,e)};return n}var m={codeRemoveIndent:/^(?: {1,4}| {0,3}\t)/gm,outputLinkReplace:/\\([\[\]])/g,indentCodeCompensation:/^(\s+)(?:```)/,beginningSpace:/^\s+/,endingHash:/#$/,startingSpaceChar:/^ /,endingSpaceChar:/ $/,nonSpaceChar:/[^ ]/,newLineCharGlobal:/\n/g,tabCharGlobal:/\t/g,multipleSpaceGlobal:/\s+/g,blankLine:/^[ \t]*$/,doubleBlankLine:/\n[ \t]*\n[ \t]*$/,blockquoteStart:/^ {0,3}>/,blockquoteSetextReplace:/\n {0,3}((?:=+|-+) *)(?=\n|$)/g,blockquoteSetextReplace2:/^ {0,3}>[ \t]?/gm,listReplaceTabs:/^\t+/,listReplaceNesting:/^ {1,4}(?=( {4})*[^ ])/g,listIsTask:/^\[[ xX]\] /,listReplaceTask:/^\[[ xX]\] +/,anyLine:/\n.*\n/,hrefBrackets:/^<(.*)>$/,tableDelimiter:/[:|]/,tableAlignChars:/^\||\| *$/g,tableRowBlankLine:/\n[ \t]*$/,tableAlignRight:/^ *-+: *$/,tableAlignCenter:/^ *:-+: *$/,tableAlignLeft:/^ *:-+ *$/,startATag:/^<a /i,endATag:/^<\/a>/i,startPreScriptTag:/^<(pre|code|kbd|script)(\s|>)/i,endPreScriptTag:/^<\/(pre|code|kbd|script)(\s|>)/i,startAngleBracket:/^</,endAngleBracket:/>$/,pedanticHrefTitle:/^([^'"]*[^\s])\s+(['"])(.*)\2/,unicodeAlphaNumeric:/[\p{L}\p{N}]/u,escapeTest:/[&<>"']/,escapeReplace:/[&<>"']/g,escapeTestNoEncode:/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/,escapeReplaceNoEncode:/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g,unescapeTest:/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig,caret:/(^|[^\[])\^/g,percentDecode:/%25/g,findPipe:/\|/g,splitPipe:/ \|/,slashPipe:/\\\|/g,carriageReturn:/\r\n|\r/g,spaceLine:/^ +$/gm,notSpaceStart:/^\S*/,endingNewline:/\n$/,listItemRegex:l=>new RegExp(`^( {0,3}${l})((?:[	 ][^\\n]*)?(?:\\n|$))`),nextBulletRegex:l=>new RegExp(`^ {0,${Math.min(3,l-1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`),hrRegex:l=>new RegExp(`^ {0,${Math.min(3,l-1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`),fencesBeginRegex:l=>new RegExp(`^ {0,${Math.min(3,l-1)}}(?:\`\`\`|~~~)`),headingBeginRegex:l=>new RegExp(`^ {0,${Math.min(3,l-1)}}#`),htmlBeginRegex:l=>new RegExp(`^ {0,${Math.min(3,l-1)}}<(?:[a-z].*>|!--)`,"i")},$e=/^(?:[ \t]*(?:\n|$))+/,_e=/^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/,Le=/^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/,O=/^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/,ze=/^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/,F=/(?:[*+-]|\d{1,9}[.)])/,ie=/^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/,oe=h(ie).replace(/bull/g,F).replace(/blockCode/g,/(?: {4}| {0,3}\t)/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\n>]+>\n/).replace(/\|table/g,"").getRegex(),Me=h(ie).replace(/bull/g,F).replace(/blockCode/g,/(?: {4}| {0,3}\t)/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\n>]+>\n/).replace(/table/g,/ {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex(),Q=/^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/,Pe=/^[^\n]+/,U=/(?!\s*\])(?:\\.|[^\[\]\\])+/,Ae=h(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label",U).replace("title",/(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex(),Ee=h(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g,F).getRegex(),v="address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul",K=/<!--(?:-?>|[\s\S]*?(?:-->|$))/,Ce=h("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$))","i").replace("comment",K).replace("tag",v).replace("attribute",/ +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex(),le=h(Q).replace("hr",O).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("|table","").replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",v).getRegex(),Ie=h(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph",le).getRegex(),X={blockquote:Ie,code:_e,def:Ae,fences:Le,heading:ze,hr:O,html:Ce,lheading:oe,list:Ee,newline:$e,paragraph:le,table:I,text:Pe},re=h("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr",O).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("blockquote"," {0,3}>").replace("code","(?: {4}| {0,3}	)[^\\n]").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",v).getRegex(),Oe={...X,lheading:Me,table:re,paragraph:h(Q).replace("hr",O).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("table",re).replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",v).getRegex()},Be={...X,html:h(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment",K).replace(/tag/g,"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,heading:/^(#{1,6})(.*)(?:\n+|$)/,fences:I,lheading:/^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,paragraph:h(Q).replace("hr",O).replace("heading",` *#{1,6} *[^
+]`).replace("lheading",oe).replace("|table","").replace("blockquote"," {0,3}>").replace("|fences","").replace("|list","").replace("|html","").replace("|tag","").getRegex()},qe=/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,ve=/^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,ae=/^( {2,}|\\)\n(?!\s*$)/,De=/^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/,D=/[\p{P}\p{S}]/u,W=/[\s\p{P}\p{S}]/u,ce=/[^\s\p{P}\p{S}]/u,Ze=h(/^((?![*_])punctSpace)/,"u").replace(/punctSpace/g,W).getRegex(),pe=/(?!~)[\p{P}\p{S}]/u,Ge=/(?!~)[\s\p{P}\p{S}]/u,He=/(?:[^\s\p{P}\p{S}]|~)/u,Ne=/\[[^[\]]*?\]\((?:\\.|[^\\\(\)]|\((?:\\.|[^\\\(\)])*\))*\)|`[^`]*?`|<[^<>]*?>/g,ue=/^(?:\*+(?:((?!\*)punct)|[^\s*]))|^_+(?:((?!_)punct)|([^\s_]))/,je=h(ue,"u").replace(/punct/g,D).getRegex(),Fe=h(ue,"u").replace(/punct/g,pe).getRegex(),he="^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)",Qe=h(he,"gu").replace(/notPunctSpace/g,ce).replace(/punctSpace/g,W).replace(/punct/g,D).getRegex(),Ue=h(he,"gu").replace(/notPunctSpace/g,He).replace(/punctSpace/g,Ge).replace(/punct/g,pe).getRegex(),Ke=h("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)","gu").replace(/notPunctSpace/g,ce).replace(/punctSpace/g,W).replace(/punct/g,D).getRegex(),Xe=h(/\\(punct)/,"gu").replace(/punct/g,D).getRegex(),We=h(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),Je=h(K).replace("(?:-->|$)","-->").getRegex(),Ve=h("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment",Je).replace("attribute",/\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex(),q=/(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/,Ye=h(/^!?\[(label)\]\(\s*(href)(?:(?:[ \t]*(?:\n[ \t]*)?)(title))?\s*\)/).replace("label",q).replace("href",/<(?:\\.|[^\n<>\\])+>|[^ \t\n\x00-\x1f]*/).replace("title",/"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex(),ke=h(/^!?\[(label)\]\[(ref)\]/).replace("label",q).replace("ref",U).getRegex(),ge=h(/^!?\[(ref)\](?:\[\])?/).replace("ref",U).getRegex(),et=h("reflink|nolink(?!\\()","g").replace("reflink",ke).replace("nolink",ge).getRegex(),J={_backpedal:I,anyPunctuation:Xe,autolink:We,blockSkip:Ne,br:ae,code:ve,del:I,emStrongLDelim:je,emStrongRDelimAst:Qe,emStrongRDelimUnd:Ke,escape:qe,link:Ye,nolink:ge,punctuation:Ze,reflink:ke,reflinkSearch:et,tag:Ve,text:De,url:I},tt={...J,link:h(/^!?\[(label)\]\((.*?)\)/).replace("label",q).getRegex(),reflink:h(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label",q).getRegex()},j={...J,emStrongRDelimAst:Ue,emStrongLDelim:Fe,url:h(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,"i").replace("email",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,del:/^(~~?)(?=[^\s~])((?:\\.|[^\\])*?(?:\\.|[^\s~\\]))\1(?=[^~]|$)/,text:/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/},nt={...j,br:h(ae).replace("{2,}","*").getRegex(),text:h(j.text).replace("\\b_","\\b_| {2,}\\n").replace(/\{2,\}/g,"*").getRegex()},B={normal:X,gfm:Oe,pedantic:Be},P={normal:J,gfm:j,breaks:nt,pedantic:tt};var st={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"},fe=l=>st[l];function R(l,e){if(e){if(m.escapeTest.test(l))return l.replace(m.escapeReplace,fe)}else if(m.escapeTestNoEncode.test(l))return l.replace(m.escapeReplaceNoEncode,fe);return l}function V(l){try{l=encodeURI(l).replace(m.percentDecode,"%")}catch{return null}return l}function Y(l,e){let t=l.replace(m.findPipe,(i,r,o)=>{let a=!1,c=r;for(;--c>=0&&o[c]==="\\";)a=!a;return a?"|":" |"}),n=t.split(m.splitPipe),s=0;if(n[0].trim()||n.shift(),n.length>0&&!n.at(-1)?.trim()&&n.pop(),e)if(n.length>e)n.splice(e);else for(;n.length<e;)n.push("");for(;s<n.length;s++)n[s]=n[s].trim().replace(m.slashPipe,"|");return n}function A(l,e,t){let n=l.length;if(n===0)return"";let s=0;for(;s<n;){let i=l.charAt(n-s-1);if(i===e&&!t)s++;else if(i!==e&&t)s++;else break}return l.slice(0,n-s)}function de(l,e){if(l.indexOf(e[1])===-1)return-1;let t=0;for(let n=0;n<l.length;n++)if(l[n]==="\\")n++;else if(l[n]===e[0])t++;else if(l[n]===e[1]&&(t--,t<0))return n;return t>0?-2:-1}function me(l,e,t,n,s){let i=e.href,r=e.title||null,o=l[1].replace(s.other.outputLinkReplace,"$1");n.state.inLink=!0;let a={type:l[0].charAt(0)==="!"?"image":"link",raw:t,href:i,title:r,text:o,tokens:n.inlineTokens(o)};return n.state.inLink=!1,a}function rt(l,e,t){let n=l.match(t.other.indentCodeCompensation);if(n===null)return e;let s=n[1];return e.split(`
+`).map(i=>{let r=i.match(t.other.beginningSpace);if(r===null)return i;let[o]=r;return o.length>=s.length?i.slice(s.length):i}).join(`
+`)}var S=class{options;rules;lexer;constructor(e){this.options=e||w}space(e){let t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:"space",raw:t[0]}}code(e){let t=this.rules.block.code.exec(e);if(t){let n=t[0].replace(this.rules.other.codeRemoveIndent,"");return{type:"code",raw:t[0],codeBlockStyle:"indented",text:this.options.pedantic?n:A(n,`
+`)}}}fences(e){let t=this.rules.block.fences.exec(e);if(t){let n=t[0],s=rt(n,t[3]||"",this.rules);return{type:"code",raw:n,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,"$1"):t[2],text:s}}}heading(e){let t=this.rules.block.heading.exec(e);if(t){let n=t[2].trim();if(this.rules.other.endingHash.test(n)){let s=A(n,"#");(this.options.pedantic||!s||this.rules.other.endingSpaceChar.test(s))&&(n=s.trim())}return{type:"heading",raw:t[0],depth:t[1].length,text:n,tokens:this.lexer.inline(n)}}}hr(e){let t=this.rules.block.hr.exec(e);if(t)return{type:"hr",raw:A(t[0],`
+`)}}blockquote(e){let t=this.rules.block.blockquote.exec(e);if(t){let n=A(t[0],`
+`).split(`
+`),s="",i="",r=[];for(;n.length>0;){let o=!1,a=[],c;for(c=0;c<n.length;c++)if(this.rules.other.blockquoteStart.test(n[c]))a.push(n[c]),o=!0;else if(!o)a.push(n[c]);else break;n=n.slice(c);let p=a.join(`
+`),u=p.replace(this.rules.other.blockquoteSetextReplace,`
+    $1`).replace(this.rules.other.blockquoteSetextReplace2,"");s=s?`${s}
+${p}`:p,i=i?`${i}
+${u}`:u;let d=this.lexer.state.top;if(this.lexer.state.top=!0,this.lexer.blockTokens(u,r,!0),this.lexer.state.top=d,n.length===0)break;let g=r.at(-1);if(g?.type==="code")break;if(g?.type==="blockquote"){let T=g,f=T.raw+`
+`+n.join(`
+`),y=this.blockquote(f);r[r.length-1]=y,s=s.substring(0,s.length-T.raw.length)+y.raw,i=i.substring(0,i.length-T.text.length)+y.text;break}else if(g?.type==="list"){let T=g,f=T.raw+`
+`+n.join(`
+`),y=this.list(f);r[r.length-1]=y,s=s.substring(0,s.length-g.raw.length)+y.raw,i=i.substring(0,i.length-T.raw.length)+y.raw,n=f.substring(r.at(-1).raw.length).split(`
+`);continue}}return{type:"blockquote",raw:s,tokens:r,text:i}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim(),s=n.length>1,i={type:"list",raw:"",ordered:s,start:s?+n.slice(0,-1):"",loose:!1,items:[]};n=s?`\\d{1,9}\\${n.slice(-1)}`:`\\${n}`,this.options.pedantic&&(n=s?n:"[*+-]");let r=this.rules.other.listItemRegex(n),o=!1;for(;e;){let c=!1,p="",u="";if(!(t=r.exec(e))||this.rules.block.hr.test(e))break;p=t[0],e=e.substring(p.length);let d=t[2].split(`
+`,1)[0].replace(this.rules.other.listReplaceTabs,Z=>" ".repeat(3*Z.length)),g=e.split(`
+`,1)[0],T=!d.trim(),f=0;if(this.options.pedantic?(f=2,u=d.trimStart()):T?f=t[1].length+1:(f=t[2].search(this.rules.other.nonSpaceChar),f=f>4?1:f,u=d.slice(f),f+=t[1].length),T&&this.rules.other.blankLine.test(g)&&(p+=g+`
+`,e=e.substring(g.length+1),c=!0),!c){let Z=this.rules.other.nextBulletRegex(f),te=this.rules.other.hrRegex(f),ne=this.rules.other.fencesBeginRegex(f),se=this.rules.other.headingBeginRegex(f),xe=this.rules.other.htmlBeginRegex(f);for(;e;){let G=e.split(`
+`,1)[0],C;if(g=G,this.options.pedantic?(g=g.replace(this.rules.other.listReplaceNesting,"  "),C=g):C=g.replace(this.rules.other.tabCharGlobal,"    "),ne.test(g)||se.test(g)||xe.test(g)||Z.test(g)||te.test(g))break;if(C.search(this.rules.other.nonSpaceChar)>=f||!g.trim())u+=`
+`+C.slice(f);else{if(T||d.replace(this.rules.other.tabCharGlobal,"    ").search(this.rules.other.nonSpaceChar)>=4||ne.test(d)||se.test(d)||te.test(d))break;u+=`
+`+g}!T&&!g.trim()&&(T=!0),p+=G+`
+`,e=e.substring(G.length+1),d=C.slice(f)}}i.loose||(o?i.loose=!0:this.rules.other.doubleBlankLine.test(p)&&(o=!0));let y=null,ee;this.options.gfm&&(y=this.rules.other.listIsTask.exec(u),y&&(ee=y[0]!=="[ ] ",u=u.replace(this.rules.other.listReplaceTask,""))),i.items.push({type:"list_item",raw:p,task:!!y,checked:ee,loose:!1,text:u,tokens:[]}),i.raw+=p}let a=i.items.at(-1);if(a)a.raw=a.raw.trimEnd(),a.text=a.text.trimEnd();else return;i.raw=i.raw.trimEnd();for(let c=0;c<i.items.length;c++)if(this.lexer.state.top=!1,i.items[c].tokens=this.lexer.blockTokens(i.items[c].text,[]),!i.loose){let p=i.items[c].tokens.filter(d=>d.type==="space"),u=p.length>0&&p.some(d=>this.rules.other.anyLine.test(d.raw));i.loose=u}if(i.loose)for(let c=0;c<i.items.length;c++)i.items[c].loose=!0;return i}}html(e){let t=this.rules.block.html.exec(e);if(t)return{type:"html",block:!0,raw:t[0],pre:t[1]==="pre"||t[1]==="script"||t[1]==="style",text:t[0]}}def(e){let t=this.rules.block.def.exec(e);if(t){let n=t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal," "),s=t[2]?t[2].replace(this.rules.other.hrefBrackets,"$1").replace(this.rules.inline.anyPunctuation,"$1"):"",i=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,"$1"):t[3];return{type:"def",tag:n,raw:t[0],href:s,title:i}}}table(e){let t=this.rules.block.table.exec(e);if(!t||!this.rules.other.tableDelimiter.test(t[2]))return;let n=Y(t[1]),s=t[2].replace(this.rules.other.tableAlignChars,"").split("|"),i=t[3]?.trim()?t[3].replace(this.rules.other.tableRowBlankLine,"").split(`
+`):[],r={type:"table",raw:t[0],header:[],align:[],rows:[]};if(n.length===s.length){for(let o of s)this.rules.other.tableAlignRight.test(o)?r.align.push("right"):this.rules.other.tableAlignCenter.test(o)?r.align.push("center"):this.rules.other.tableAlignLeft.test(o)?r.align.push("left"):r.align.push(null);for(let o=0;o<n.length;o++)r.header.push({text:n[o],tokens:this.lexer.inline(n[o]),header:!0,align:r.align[o]});for(let o of i)r.rows.push(Y(o,r.header.length).map((a,c)=>({text:a,tokens:this.lexer.inline(a),header:!1,align:r.align[c]})));return r}}lheading(e){let t=this.rules.block.lheading.exec(e);if(t)return{type:"heading",raw:t[0],depth:t[2].charAt(0)==="="?1:2,text:t[1],tokens:this.lexer.inline(t[1])}}paragraph(e){let t=this.rules.block.paragraph.exec(e);if(t){let n=t[1].charAt(t[1].length-1)===`
+`?t[1].slice(0,-1):t[1];return{type:"paragraph",raw:t[0],text:n,tokens:this.lexer.inline(n)}}}text(e){let t=this.rules.block.text.exec(e);if(t)return{type:"text",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){let t=this.rules.inline.escape.exec(e);if(t)return{type:"escape",raw:t[0],text:t[1]}}tag(e){let t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&this.rules.other.startATag.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&this.rules.other.endATag.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&this.rules.other.startPreScriptTag.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&this.rules.other.endPreScriptTag.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:"html",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){let t=this.rules.inline.link.exec(e);if(t){let n=t[2].trim();if(!this.options.pedantic&&this.rules.other.startAngleBracket.test(n)){if(!this.rules.other.endAngleBracket.test(n))return;let r=A(n.slice(0,-1),"\\");if((n.length-r.length)%2===0)return}else{let r=de(t[2],"()");if(r===-2)return;if(r>-1){let a=(t[0].indexOf("!")===0?5:4)+t[1].length+r;t[2]=t[2].substring(0,r),t[0]=t[0].substring(0,a).trim(),t[3]=""}}let s=t[2],i="";if(this.options.pedantic){let r=this.rules.other.pedanticHrefTitle.exec(s);r&&(s=r[1],i=r[3])}else i=t[3]?t[3].slice(1,-1):"";return s=s.trim(),this.rules.other.startAngleBracket.test(s)&&(this.options.pedantic&&!this.rules.other.endAngleBracket.test(n)?s=s.slice(1):s=s.slice(1,-1)),me(t,{href:s&&s.replace(this.rules.inline.anyPunctuation,"$1"),title:i&&i.replace(this.rules.inline.anyPunctuation,"$1")},t[0],this.lexer,this.rules)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){let s=(n[2]||n[1]).replace(this.rules.other.multipleSpaceGlobal," "),i=t[s.toLowerCase()];if(!i){let r=n[0].charAt(0);return{type:"text",raw:r,text:r}}return me(n,i,n[0],this.lexer,this.rules)}}emStrong(e,t,n=""){let s=this.rules.inline.emStrongLDelim.exec(e);if(!s||s[3]&&n.match(this.rules.other.unicodeAlphaNumeric))return;if(!(s[1]||s[2]||"")||!n||this.rules.inline.punctuation.exec(n)){let r=[...s[0]].length-1,o,a,c=r,p=0,u=s[0][0]==="*"?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(u.lastIndex=0,t=t.slice(-1*e.length+r);(s=u.exec(t))!=null;){if(o=s[1]||s[2]||s[3]||s[4]||s[5]||s[6],!o)continue;if(a=[...o].length,s[3]||s[4]){c+=a;continue}else if((s[5]||s[6])&&r%3&&!((r+a)%3)){p+=a;continue}if(c-=a,c>0)continue;a=Math.min(a,a+c+p);let d=[...s[0]][0].length,g=e.slice(0,r+s.index+d+a);if(Math.min(r,a)%2){let f=g.slice(1,-1);return{type:"em",raw:g,text:f,tokens:this.lexer.inlineTokens(f)}}let T=g.slice(2,-2);return{type:"strong",raw:g,text:T,tokens:this.lexer.inlineTokens(T)}}}}codespan(e){let t=this.rules.inline.code.exec(e);if(t){let n=t[2].replace(this.rules.other.newLineCharGlobal," "),s=this.rules.other.nonSpaceChar.test(n),i=this.rules.other.startingSpaceChar.test(n)&&this.rules.other.endingSpaceChar.test(n);return s&&i&&(n=n.substring(1,n.length-1)),{type:"codespan",raw:t[0],text:n}}}br(e){let t=this.rules.inline.br.exec(e);if(t)return{type:"br",raw:t[0]}}del(e){let t=this.rules.inline.del.exec(e);if(t)return{type:"del",raw:t[0],text:t[2],tokens:this.lexer.inlineTokens(t[2])}}autolink(e){let t=this.rules.inline.autolink.exec(e);if(t){let n,s;return t[2]==="@"?(n=t[1],s="mailto:"+n):(n=t[1],s=n),{type:"link",raw:t[0],text:n,href:s,tokens:[{type:"text",raw:n,text:n}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let n,s;if(t[2]==="@")n=t[0],s="mailto:"+n;else{let i;do i=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??"";while(i!==t[0]);n=t[0],t[1]==="www."?s="http://"+t[0]:s=t[0]}return{type:"link",raw:t[0],text:n,href:s,tokens:[{type:"text",raw:n,text:n}]}}}inlineText(e){let t=this.rules.inline.text.exec(e);if(t){let n=this.lexer.state.inRawBlock;return{type:"text",raw:t[0],text:t[0],escaped:n}}}};var x=class l{tokens;options;state;tokenizer;inlineQueue;constructor(e){this.tokens=[],this.tokens.links=Object.create(null),this.options=e||w,this.options.tokenizer=this.options.tokenizer||new S,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};let t={other:m,block:B.normal,inline:P.normal};this.options.pedantic?(t.block=B.pedantic,t.inline=P.pedantic):this.options.gfm&&(t.block=B.gfm,this.options.breaks?t.inline=P.breaks:t.inline=P.gfm),this.tokenizer.rules=t}static get rules(){return{block:B,inline:P}}static lex(e,t){return new l(t).lex(e)}static lexInline(e,t){return new l(t).inlineTokens(e)}lex(e){e=e.replace(m.carriageReturn,`
+`),this.blockTokens(e,this.tokens);for(let t=0;t<this.inlineQueue.length;t++){let n=this.inlineQueue[t];this.inlineTokens(n.src,n.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[],n=!1){for(this.options.pedantic&&(e=e.replace(m.tabCharGlobal,"    ").replace(m.spaceLine,""));e;){let s;if(this.options.extensions?.block?.some(r=>(s=r.call({lexer:this},e,t))?(e=e.substring(s.raw.length),t.push(s),!0):!1))continue;if(s=this.tokenizer.space(e)){e=e.substring(s.raw.length);let r=t.at(-1);s.raw.length===1&&r!==void 0?r.raw+=`
+`:t.push(s);continue}if(s=this.tokenizer.code(e)){e=e.substring(s.raw.length);let r=t.at(-1);r?.type==="paragraph"||r?.type==="text"?(r.raw+=`
+`+s.raw,r.text+=`
+`+s.text,this.inlineQueue.at(-1).src=r.text):t.push(s);continue}if(s=this.tokenizer.fences(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.heading(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.hr(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.blockquote(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.list(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.html(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.def(e)){e=e.substring(s.raw.length);let r=t.at(-1);r?.type==="paragraph"||r?.type==="text"?(r.raw+=`
+`+s.raw,r.text+=`
+`+s.raw,this.inlineQueue.at(-1).src=r.text):this.tokens.links[s.tag]||(this.tokens.links[s.tag]={href:s.href,title:s.title});continue}if(s=this.tokenizer.table(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.lheading(e)){e=e.substring(s.raw.length),t.push(s);continue}let i=e;if(this.options.extensions?.startBlock){let r=1/0,o=e.slice(1),a;this.options.extensions.startBlock.forEach(c=>{a=c.call({lexer:this},o),typeof a=="number"&&a>=0&&(r=Math.min(r,a))}),r<1/0&&r>=0&&(i=e.substring(0,r+1))}if(this.state.top&&(s=this.tokenizer.paragraph(i))){let r=t.at(-1);n&&r?.type==="paragraph"?(r.raw+=`
+`+s.raw,r.text+=`
+`+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=r.text):t.push(s),n=i.length!==e.length,e=e.substring(s.raw.length);continue}if(s=this.tokenizer.text(e)){e=e.substring(s.raw.length);let r=t.at(-1);r?.type==="text"?(r.raw+=`
+`+s.raw,r.text+=`
+`+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=r.text):t.push(s);continue}if(e){let r="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(r);break}else throw new Error(r)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){let n=e,s=null;if(this.tokens.links){let o=Object.keys(this.tokens.links);if(o.length>0)for(;(s=this.tokenizer.rules.inline.reflinkSearch.exec(n))!=null;)o.includes(s[0].slice(s[0].lastIndexOf("[")+1,-1))&&(n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;(s=this.tokenizer.rules.inline.anyPunctuation.exec(n))!=null;)n=n.slice(0,s.index)+"++"+n.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);for(;(s=this.tokenizer.rules.inline.blockSkip.exec(n))!=null;)n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);let i=!1,r="";for(;e;){i||(r=""),i=!1;let o;if(this.options.extensions?.inline?.some(c=>(o=c.call({lexer:this},e,t))?(e=e.substring(o.raw.length),t.push(o),!0):!1))continue;if(o=this.tokenizer.escape(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.tag(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.link(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.reflink(e,this.tokens.links)){e=e.substring(o.raw.length);let c=t.at(-1);o.type==="text"&&c?.type==="text"?(c.raw+=o.raw,c.text+=o.text):t.push(o);continue}if(o=this.tokenizer.emStrong(e,n,r)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.codespan(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.br(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.del(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.autolink(e)){e=e.substring(o.raw.length),t.push(o);continue}if(!this.state.inLink&&(o=this.tokenizer.url(e))){e=e.substring(o.raw.length),t.push(o);continue}let a=e;if(this.options.extensions?.startInline){let c=1/0,p=e.slice(1),u;this.options.extensions.startInline.forEach(d=>{u=d.call({lexer:this},p),typeof u=="number"&&u>=0&&(c=Math.min(c,u))}),c<1/0&&c>=0&&(a=e.substring(0,c+1))}if(o=this.tokenizer.inlineText(a)){e=e.substring(o.raw.length),o.raw.slice(-1)!=="_"&&(r=o.raw.slice(-1)),i=!0;let c=t.at(-1);c?.type==="text"?(c.raw+=o.raw,c.text+=o.text):t.push(o);continue}if(e){let c="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(c);break}else throw new Error(c)}}return t}};var $=class{options;parser;constructor(e){this.options=e||w}space(e){return""}code({text:e,lang:t,escaped:n}){let s=(t||"").match(m.notSpaceStart)?.[0],i=e.replace(m.endingNewline,"")+`
+`;return s?'<pre><code class="language-'+R(s)+'">'+(n?i:R(i,!0))+`</code></pre>
+`:"<pre><code>"+(n?i:R(i,!0))+`</code></pre>
+`}blockquote({tokens:e}){return`<blockquote>
+${this.parser.parse(e)}</blockquote>
+`}html({text:e}){return e}heading({tokens:e,depth:t}){return`<h${t}>${this.parser.parseInline(e)}</h${t}>
+`}hr(e){return`<hr>
+`}list(e){let t=e.ordered,n=e.start,s="";for(let o=0;o<e.items.length;o++){let a=e.items[o];s+=this.listitem(a)}let i=t?"ol":"ul",r=t&&n!==1?' start="'+n+'"':"";return"<"+i+r+`>
+`+s+"</"+i+`>
+`}listitem(e){let t="";if(e.task){let n=this.checkbox({checked:!!e.checked});e.loose?e.tokens[0]?.type==="paragraph"?(e.tokens[0].text=n+" "+e.tokens[0].text,e.tokens[0].tokens&&e.tokens[0].tokens.length>0&&e.tokens[0].tokens[0].type==="text"&&(e.tokens[0].tokens[0].text=n+" "+R(e.tokens[0].tokens[0].text),e.tokens[0].tokens[0].escaped=!0)):e.tokens.unshift({type:"text",raw:n+" ",text:n+" ",escaped:!0}):t+=n+" "}return t+=this.parser.parse(e.tokens,!!e.loose),`<li>${t}</li>
+`}checkbox({checked:e}){return"<input "+(e?'checked="" ':"")+'disabled="" type="checkbox">'}paragraph({tokens:e}){return`<p>${this.parser.parseInline(e)}</p>
+`}table(e){let t="",n="";for(let i=0;i<e.header.length;i++)n+=this.tablecell(e.header[i]);t+=this.tablerow({text:n});let s="";for(let i=0;i<e.rows.length;i++){let r=e.rows[i];n="";for(let o=0;o<r.length;o++)n+=this.tablecell(r[o]);s+=this.tablerow({text:n})}return s&&(s=`<tbody>${s}</tbody>`),`<table>
+<thead>
+`+t+`</thead>
+`+s+`</table>
+`}tablerow({text:e}){return`<tr>
+${e}</tr>
+`}tablecell(e){let t=this.parser.parseInline(e.tokens),n=e.header?"th":"td";return(e.align?`<${n} align="${e.align}">`:`<${n}>`)+t+`</${n}>
+`}strong({tokens:e}){return`<strong>${this.parser.parseInline(e)}</strong>`}em({tokens:e}){return`<em>${this.parser.parseInline(e)}</em>`}codespan({text:e}){return`<code>${R(e,!0)}</code>`}br(e){return"<br>"}del({tokens:e}){return`<del>${this.parser.parseInline(e)}</del>`}link({href:e,title:t,tokens:n}){let s=this.parser.parseInline(n),i=V(e);if(i===null)return s;e=i;let r='<a href="'+e+'"';return t&&(r+=' title="'+R(t)+'"'),r+=">"+s+"</a>",r}image({href:e,title:t,text:n,tokens:s}){s&&(n=this.parser.parseInline(s,this.parser.textRenderer));let i=V(e);if(i===null)return R(n);e=i;let r=`<img src="${e}" alt="${n}"`;return t&&(r+=` title="${R(t)}"`),r+=">",r}text(e){return"tokens"in e&&e.tokens?this.parser.parseInline(e.tokens):"escaped"in e&&e.escaped?e.text:R(e.text)}};var _=class{strong({text:e}){return e}em({text:e}){return e}codespan({text:e}){return e}del({text:e}){return e}html({text:e}){return e}text({text:e}){return e}link({text:e}){return""+e}image({text:e}){return""+e}br(){return""}};var b=class l{options;renderer;textRenderer;constructor(e){this.options=e||w,this.options.renderer=this.options.renderer||new $,this.renderer=this.options.renderer,this.renderer.options=this.options,this.renderer.parser=this,this.textRenderer=new _}static parse(e,t){return new l(t).parse(e)}static parseInline(e,t){return new l(t).parseInline(e)}parse(e,t=!0){let n="";for(let s=0;s<e.length;s++){let i=e[s];if(this.options.extensions?.renderers?.[i.type]){let o=i,a=this.options.extensions.renderers[o.type].call({parser:this},o);if(a!==!1||!["space","hr","heading","code","table","blockquote","list","html","paragraph","text"].includes(o.type)){n+=a||"";continue}}let r=i;switch(r.type){case"space":{n+=this.renderer.space(r);continue}case"hr":{n+=this.renderer.hr(r);continue}case"heading":{n+=this.renderer.heading(r);continue}case"code":{n+=this.renderer.code(r);continue}case"table":{n+=this.renderer.table(r);continue}case"blockquote":{n+=this.renderer.blockquote(r);continue}case"list":{n+=this.renderer.list(r);continue}case"html":{n+=this.renderer.html(r);continue}case"paragraph":{n+=this.renderer.paragraph(r);continue}case"text":{let o=r,a=this.renderer.text(o);for(;s+1<e.length&&e[s+1].type==="text";)o=e[++s],a+=`
+`+this.renderer.text(o);t?n+=this.renderer.paragraph({type:"paragraph",raw:a,text:a,tokens:[{type:"text",raw:a,text:a,escaped:!0}]}):n+=a;continue}default:{let o='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(o),"";throw new Error(o)}}}return n}parseInline(e,t=this.renderer){let n="";for(let s=0;s<e.length;s++){let i=e[s];if(this.options.extensions?.renderers?.[i.type]){let o=this.options.extensions.renderers[i.type].call({parser:this},i);if(o!==!1||!["escape","html","link","image","strong","em","codespan","br","del","text"].includes(i.type)){n+=o||"";continue}}let r=i;switch(r.type){case"escape":{n+=t.text(r);break}case"html":{n+=t.html(r);break}case"link":{n+=t.link(r);break}case"image":{n+=t.image(r);break}case"strong":{n+=t.strong(r);break}case"em":{n+=t.em(r);break}case"codespan":{n+=t.codespan(r);break}case"br":{n+=t.br(r);break}case"del":{n+=t.del(r);break}case"text":{n+=t.text(r);break}default:{let o='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(o),"";throw new Error(o)}}}return n}};var L=class{options;block;constructor(e){this.options=e||w}static passThroughHooks=new Set(["preprocess","postprocess","processAllTokens"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}provideLexer(){return this.block?x.lex:x.lexInline}provideParser(){return this.block?b.parse:b.parseInline}};var E=class{defaults=z();options=this.setOptions;parse=this.parseMarkdown(!0);parseInline=this.parseMarkdown(!1);Parser=b;Renderer=$;TextRenderer=_;Lexer=x;Tokenizer=S;Hooks=L;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(let s of e)switch(n=n.concat(t.call(this,s)),s.type){case"table":{let i=s;for(let r of i.header)n=n.concat(this.walkTokens(r.tokens,t));for(let r of i.rows)for(let o of r)n=n.concat(this.walkTokens(o.tokens,t));break}case"list":{let i=s;n=n.concat(this.walkTokens(i.items,t));break}default:{let i=s;this.defaults.extensions?.childTokens?.[i.type]?this.defaults.extensions.childTokens[i.type].forEach(r=>{let o=i[r].flat(1/0);n=n.concat(this.walkTokens(o,t))}):i.tokens&&(n=n.concat(this.walkTokens(i.tokens,t)))}}return n}use(...e){let t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach(n=>{let s={...n};if(s.async=this.defaults.async||s.async||!1,n.extensions&&(n.extensions.forEach(i=>{if(!i.name)throw new Error("extension name required");if("renderer"in i){let r=t.renderers[i.name];r?t.renderers[i.name]=function(...o){let a=i.renderer.apply(this,o);return a===!1&&(a=r.apply(this,o)),a}:t.renderers[i.name]=i.renderer}if("tokenizer"in i){if(!i.level||i.level!=="block"&&i.level!=="inline")throw new Error("extension level must be 'block' or 'inline'");let r=t[i.level];r?r.unshift(i.tokenizer):t[i.level]=[i.tokenizer],i.start&&(i.level==="block"?t.startBlock?t.startBlock.push(i.start):t.startBlock=[i.start]:i.level==="inline"&&(t.startInline?t.startInline.push(i.start):t.startInline=[i.start]))}"childTokens"in i&&i.childTokens&&(t.childTokens[i.name]=i.childTokens)}),s.extensions=t),n.renderer){let i=this.defaults.renderer||new $(this.defaults);for(let r in n.renderer){if(!(r in i))throw new Error(`renderer '${r}' does not exist`);if(["options","parser"].includes(r))continue;let o=r,a=n.renderer[o],c=i[o];i[o]=(...p)=>{let u=a.apply(i,p);return u===!1&&(u=c.apply(i,p)),u||""}}s.renderer=i}if(n.tokenizer){let i=this.defaults.tokenizer||new S(this.defaults);for(let r in n.tokenizer){if(!(r in i))throw new Error(`tokenizer '${r}' does not exist`);if(["options","rules","lexer"].includes(r))continue;let o=r,a=n.tokenizer[o],c=i[o];i[o]=(...p)=>{let u=a.apply(i,p);return u===!1&&(u=c.apply(i,p)),u}}s.tokenizer=i}if(n.hooks){let i=this.defaults.hooks||new L;for(let r in n.hooks){if(!(r in i))throw new Error(`hook '${r}' does not exist`);if(["options","block"].includes(r))continue;let o=r,a=n.hooks[o],c=i[o];L.passThroughHooks.has(r)?i[o]=p=>{if(this.defaults.async)return Promise.resolve(a.call(i,p)).then(d=>c.call(i,d));let u=a.call(i,p);return c.call(i,u)}:i[o]=(...p)=>{let u=a.apply(i,p);return u===!1&&(u=c.apply(i,p)),u}}s.hooks=i}if(n.walkTokens){let i=this.defaults.walkTokens,r=n.walkTokens;s.walkTokens=function(o){let a=[];return a.push(r.call(this,o)),i&&(a=a.concat(i.call(this,o))),a}}this.defaults={...this.defaults,...s}}),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return x.lex(e,t??this.defaults)}parser(e,t){return b.parse(e,t??this.defaults)}parseMarkdown(e){return(n,s)=>{let i={...s},r={...this.defaults,...i},o=this.onError(!!r.silent,!!r.async);if(this.defaults.async===!0&&i.async===!1)return o(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));if(typeof n>"u"||n===null)return o(new Error("marked(): input parameter is undefined or null"));if(typeof n!="string")return o(new Error("marked(): input parameter is of type "+Object.prototype.toString.call(n)+", string expected"));r.hooks&&(r.hooks.options=r,r.hooks.block=e);let a=r.hooks?r.hooks.provideLexer():e?x.lex:x.lexInline,c=r.hooks?r.hooks.provideParser():e?b.parse:b.parseInline;if(r.async)return Promise.resolve(r.hooks?r.hooks.preprocess(n):n).then(p=>a(p,r)).then(p=>r.hooks?r.hooks.processAllTokens(p):p).then(p=>r.walkTokens?Promise.all(this.walkTokens(p,r.walkTokens)).then(()=>p):p).then(p=>c(p,r)).then(p=>r.hooks?r.hooks.postprocess(p):p).catch(o);try{r.hooks&&(n=r.hooks.preprocess(n));let p=a(n,r);r.hooks&&(p=r.hooks.processAllTokens(p)),r.walkTokens&&this.walkTokens(p,r.walkTokens);let u=c(p,r);return r.hooks&&(u=r.hooks.postprocess(u)),u}catch(p){return o(p)}}}onError(e,t){return n=>{if(n.message+=`
+Please report this to https://github.com/markedjs/marked.`,e){let s="<p>An error occurred:</p><pre>"+R(n.message+"",!0)+"</pre>";return t?Promise.resolve(s):s}if(t)return Promise.reject(n);throw n}}};var M=new E;function k(l,e){return M.parse(l,e)}k.options=k.setOptions=function(l){return M.setOptions(l),k.defaults=M.defaults,N(k.defaults),k};k.getDefaults=z;k.defaults=w;k.use=function(...l){return M.use(...l),k.defaults=M.defaults,N(k.defaults),k};k.walkTokens=function(l,e){return M.walkTokens(l,e)};k.parseInline=M.parseInline;k.Parser=b;k.parser=b.parse;k.Renderer=$;k.TextRenderer=_;k.Lexer=x;k.lexer=x.lex;k.Tokenizer=S;k.Hooks=L;k.parse=k;var it=k.options,ot=k.setOptions,lt=k.use,at=k.walkTokens,ct=k.parseInline,pt=k,ut=b.parse,ht=x.lex;
+
+if(__exports != exports)module.exports = exports;return module.exports}));
+
+// === end marked.js ===
+</script>
+<script>
+// Configure marked
+if (typeof marked !== 'undefined') {
+  marked.setOptions({ gfm: true, breaks: true });
+}
+// ===== State =====
+let allEvents = [];
+let filteredEvents = []; // newest-first, rebuilt on filter change
+let selectedEventId = null;
+let autoScroll = true;
+let filters = { types: new Set(), tools: new Set(), sessions: new Set(), search: '' };
+let preToolTimestamps = new Map();
+let missedEventsCount = 0;
+let detailPanelHeight = 320;
+let eventSource = null;
+
+// ===== Virtual Scroll =====
+const VS_ITEM_HEIGHT = 48; // estimated card height in px
+const VS_BUFFER = 20;      // extra items above/below viewport
+let vsRangeStart = 0;
+let vsRangeEnd = 0;
+let vsScrollRAF = null;
+
+// ===== Constants =====
+const EVENT_CATEGORIES = {
+  session: { label: 'Session', color: 'var(--cat-session)', types: ['SessionStart', 'UserPromptSubmit', 'SessionEnd'] },
+  tool: { label: 'Tool', color: 'var(--cat-tool)', types: ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest'] },
+  agent: { label: 'Agent', color: 'var(--cat-agent)', types: ['SubagentStart', 'SubagentStop', 'TeammateIdle'] },
+  stop: { label: 'Stop', color: 'var(--cat-stop)', types: ['Stop', 'StopFailure'] },
+  task: { label: 'Task', color: 'var(--cat-task)', types: ['TaskCompleted', 'WorktreeCreate', 'WorktreeRemove'] },
+  config: { label: 'Config', color: 'var(--cat-config)', types: ['InstructionsLoaded', 'ConfigChange', 'PreCompact', 'PostCompact'] },
+  mcp: { label: 'MCP', color: 'var(--cat-mcp)', types: ['Elicitation', 'ElicitationResult'] },
+  notification: { label: 'Notification', color: 'var(--cat-notification)', types: ['Notification'] },
+};
+
+const EVENT_ICONS = {
+  SessionStart: '\u25B6',
+  UserPromptSubmit: '\uD83D\uDCAC',
+  SessionEnd: '\u25FC',
+  PreToolUse: '\u26A1',
+  PermissionRequest: '\uD83D\uDD12',
+  PostToolUse: '\u2713',
+  PostToolUseFailure: '\u2717',
+  SubagentStart: '\u25C8',
+  SubagentStop: '\u25C7',
+  TeammateIdle: '\u23F8',
+  Stop: '\u25CF',
+  StopFailure: '\u26A0',
+  TaskCompleted: '\u2611',
+  WorktreeCreate: '\u2442',
+  WorktreeRemove: '\u2443',
+  InstructionsLoaded: '\uD83D\uDCCB',
+  ConfigChange: '\u2699',
+  PreCompact: '\u25C0',
+  PostCompact: '\u25B8',
+  Elicitation: '\u2B21',
+  ElicitationResult: '\u2B22',
+  Notification: '\uD83D\uDD14',
+};
+
+const FIELD_DESCRIPTIONS = {
+  hook_event_name: 'The type of lifecycle event that triggered this hook',
+  session_id: 'Unique identifier for this Claude Code session',
+  transcript_path: 'File path where the full conversation transcript is stored',
+  cwd: 'Current working directory where Claude Code is running',
+  permission_mode: 'Current permission level: default, plan, acceptEdits, dontAsk, or bypassPermissions',
+  tool_name: 'Name of the tool being called (e.g., Bash, Edit, Write, Read, Glob, Grep)',
+  tool_input: 'Parameters passed to the tool before execution',
+  tool_response: 'Data returned by the tool after successful execution',
+  tool_use_id: 'Unique ID linking PreToolUse and PostToolUse events for the same tool call',
+  error: 'Error message or error type describing what went wrong',
+  is_interrupt: 'Whether the failure was caused by the user pressing Ctrl+C',
+  prompt: 'The text prompt submitted by the user',
+  source: 'How the session started or what triggered the event (startup, resume, clear, compact)',
+  model: 'The AI model identifier being used in this session',
+  agent_id: 'Unique identifier for a subagent instance',
+  agent_type: 'Type of subagent (e.g., Explore, Plan, or a custom agent name)',
+  agent_transcript_path: 'File path where the subagent conversation transcript is stored',
+  stop_hook_active: 'True when Claude is already continuing due to a previous Stop hook (prevents infinite loops)',
+  last_assistant_message: 'The text content of Claude\'s most recent response',
+  message: 'The notification message text',
+  title: 'Optional title for the notification',
+  notification_type: 'Category: permission_prompt, idle_prompt, auth_success, or elicitation_dialog',
+  file_path: 'Path to the file being operated on',
+  memory_type: 'Scope of the instruction file: User, Project, Local, or Managed',
+  load_reason: 'Why the instruction file was loaded: session_start, nested_traversal, path_glob_match, include, or compact',
+  globs: 'Path glob patterns from the file frontmatter that triggered this load',
+  trigger_file_path: 'Path to the file whose access triggered loading this instruction',
+  parent_file_path: 'Path to the parent instruction file that included this one',
+  trigger: 'What triggered compaction: manual (user) or auto (context limit)',
+  custom_instructions: 'Custom instructions the user passed to the compact command',
+  compact_summary: 'AI-generated summary of the conversation after compaction',
+  name: 'Identifier for the worktree being created',
+  worktree_path: 'Absolute path to the worktree directory',
+  task_id: 'Identifier of the task being completed',
+  task_subject: 'Title of the task',
+  task_description: 'Detailed description of what the task involves',
+  teammate_name: 'Name of the teammate in an agent team',
+  team_name: 'Name of the agent team',
+  reason: 'Why the session ended or an action was taken',
+  mcp_server_name: 'Name of the MCP server requesting input or receiving a response',
+  mode: 'Elicitation mode: form (structured input) or url (browser authentication)',
+  url: 'URL for browser-based authentication flow',
+  elicitation_id: 'Unique identifier for this elicitation request',
+  requested_schema: 'JSON Schema describing the form fields the MCP server is requesting',
+  action: 'User response: accept (submitted data), decline (refused), or cancel',
+  content: 'Form field values submitted by the user',
+  permission_suggestions: 'Available "always allow" options that the user could select',
+  error_details: 'Additional technical details about an API error',
+  _observer: 'Metadata added by Hook Observer (not from Claude Code)',
+  '_observer.event_id': 'Unique ID assigned by Hook Observer for tracking',
+  '_observer.timestamp': 'Unix timestamp (ms) when Hook Observer received this event',
+  '_observer.received_at': 'ISO 8601 datetime when Hook Observer received this event',
+  '_observer.duration_ms': 'Time elapsed between PreToolUse and PostToolUse for this tool call',
+};
+
+// ===== Utility Functions =====
+function getCategoryForEvent(eventName) {
+  for (const [cat, info] of Object.entries(EVENT_CATEGORIES)) {
+    if (info.types.includes(eventName)) return cat;
+  }
+  return 'session';
+}
+
+function getCategoryColor(eventName) {
+  const cat = getCategoryForEvent(eventName);
+  return EVENT_CATEGORIES[cat] ? EVENT_CATEGORIES[cat].color : 'var(--text-muted)';
+}
+
+function formatRelativeTime(timestampMs) {
+  const now = Date.now();
+  const diff = Math.max(0, now - timestampMs);
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return seconds + 's ago';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return minutes + 'm ago';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days + 'd ago';
+}
+
+function formatAbsoluteTime(timestampMs) {
+  const d = new Date(timestampMs);
+  const pad = (n, l) => String(n).padStart(l || 2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' '
+    + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '.' + pad(d.getMilliseconds(), 3);
+}
+
+function formatDuration(ms) {
+  if (ms < 1000) return Math.round(ms) + 'ms';
+  return (ms / 1000).toFixed(1) + 's';
+}
+
+function getDurationClass(ms) {
+  if (ms < 500) return 'fast';
+  if (ms < 2000) return 'medium';
+  return 'slow';
+}
+
+function truncate(str, len) {
+  if (!str) return '';
+  str = String(str);
+  return str.length > len ? str.slice(0, len) + '...' : str;
+}
+
+function getEventId(event) {
+  return event._observer && event._observer.event_id ? event._observer.event_id : null;
+}
+
+function getTimestamp(event) {
+  if (event._observer && event._observer.timestamp) return event._observer.timestamp;
+  if (event._observer && event._observer.received_at) return new Date(event._observer.received_at).getTime();
+  return Date.now();
+}
+
+function getEventSummary(event) {
+  const name = event.hook_event_name;
+  switch (name) {
+    case 'PreToolUse': {
+      const inp = event.tool_input;
+      let detail = '';
+      if (inp) {
+        if (inp.command) detail = truncate(inp.command, 60);
+        else if (inp.file_path) detail = truncate(inp.file_path, 60);
+        else if (inp.pattern) detail = truncate(inp.pattern, 60);
+        else {
+          const keys = Object.keys(inp);
+          if (keys.length > 0) detail = truncate(JSON.stringify(inp), 60);
+        }
+      }
+      return 'Calling ' + (event.tool_name || '?') + (detail ? ': ' + detail : '');
+    }
+    case 'PostToolUse':
+      return 'Completed ' + (event.tool_name || '?');
+    case 'PostToolUseFailure': {
+      const err = event.error ? truncate(String(event.error), 60) : 'unknown error';
+      return 'Failed ' + (event.tool_name || '?') + ': ' + err;
+    }
+    case 'SessionStart':
+      return 'Session started' + (event.source ? ' (' + event.source + ')' : '');
+    case 'UserPromptSubmit':
+      return 'Prompt: ' + truncate(event.prompt || '', 80);
+    case 'Stop':
+      return 'Claude stopped';
+    case 'StopFailure':
+      return 'Error: ' + truncate(event.error || '', 60);
+    case 'SubagentStart':
+      return 'Agent spawned: ' + (event.agent_type || '?');
+    case 'SubagentStop':
+      return 'Agent finished: ' + (event.agent_type || '?');
+    case 'PermissionRequest':
+      return 'Permission needed for ' + (event.tool_name || '?');
+    case 'Notification':
+      return truncate(event.message || '', 80);
+    case 'ConfigChange':
+      return 'Config changed' + (event.source ? ': ' + event.source : '');
+    case 'InstructionsLoaded': {
+      const fp = event.file_path || '';
+      const base = fp.split('/').pop() || fp;
+      return 'Loaded: ' + base;
+    }
+    case 'TaskCompleted':
+      return 'Task done: ' + truncate(event.task_subject || '', 60);
+    case 'WorktreeCreate':
+      return 'Worktree: ' + (event.name || '?');
+    case 'WorktreeRemove':
+      return 'Worktree removed';
+    case 'PreCompact':
+      return 'Compaction' + (event.trigger ? ' (' + event.trigger + ')' : '');
+    case 'PostCompact':
+      return 'Compaction' + (event.trigger ? ' (' + event.trigger + ')' : '');
+    case 'Elicitation':
+      return 'Input requested by ' + (event.mcp_server_name || '?');
+    case 'ElicitationResult':
+      return 'Input submitted to ' + (event.mcp_server_name || '?');
+    case 'TeammateIdle':
+      return 'Teammate idle: ' + (event.teammate_name || '?');
+    case 'SessionEnd':
+      return 'Session ended' + (event.reason ? ' (' + event.reason + ')' : '');
+    default:
+      return name || 'Unknown event';
+  }
+}
+
+function highlightJSON(obj) {
+  let str;
+  try {
+    str = JSON.stringify(obj, null, 2);
+  } catch (e) {
+    str = String(obj);
+  }
+  // Escape HTML
+  str = str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Highlight syntax
+  str = str.replace(/"([^"\\]*(\\.[^"\\]*)*)"\s*:/g, '<span class="jk">"$1"</span>:');
+  str = str.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="js">"$1"</span>');
+  str = str.replace(/\b(-?\d+\.?\d*([eE][+-]?\d+)?)\b/g, '<span class="jn">$1</span>');
+  str = str.replace(/\b(true|false)\b/g, '<span class="jb">$1</span>');
+  str = str.replace(/\bnull\b/g, '<span class="jl">null</span>');
+  return str;
+}
+
+function debounce(fn, ms) {
+  let timer;
+  return function() {
+    clearTimeout(timer);
+    const args = arguments;
+    const ctx = this;
+    timer = setTimeout(function() { fn.apply(ctx, args); }, ms);
+  };
+}
+
+// ===== Filter Logic =====
+function eventMatchesFilters(event) {
+  const name = event.hook_event_name;
+  // Type filter
+  if (filters.types.size > 0 && !filters.types.has(name)) return false;
+  // Tool filter
+  if (filters.tools.size > 0) {
+    if (!event.tool_name || !filters.tools.has(event.tool_name)) return false;
+  }
+  // Session filter
+  if (filters.sessions.size > 0) {
+    if (!event.session_id || !filters.sessions.has(event.session_id)) return false;
+  }
+  // Search filter
+  if (filters.search) {
+    try {
+      const haystack = JSON.stringify(event).toLowerCase();
+      if (!haystack.includes(filters.search.toLowerCase())) return false;
+    } catch (e) { /* pass */ }
+  }
+  return true;
+}
+
+function rebuildFilteredEvents() {
+  // newest-first: reverse iterate allEvents
+  filteredEvents = [];
+  for (var i = allEvents.length - 1; i >= 0; i--) {
+    if (eventMatchesFilters(allEvents[i])) filteredEvents.push(allEvents[i]);
+  }
+}
+
+function refilterTimeline() {
+  rebuildFilteredEvents();
+  vsForceRender();
+}
+
+// ===== Tracking counts =====
+let toolCounts = {};
+let sessionIds = new Set();
+let toolCallCount = 0;
+let errorCount = 0;
+
+function updateStats() {
+  const total = allEvents.length;
+  document.getElementById('statTotalEvents').textContent = total;
+  document.getElementById('statSessions').textContent = sessionIds.size;
+  document.getElementById('statToolCalls').textContent = toolCallCount;
+  document.getElementById('statErrors').textContent = errorCount;
+  document.getElementById('sidebarStatTotal').textContent = total;
+  document.getElementById('sidebarStatSessions').textContent = sessionIds.size;
+  document.getElementById('sidebarStatTools').textContent = toolCallCount;
+  document.getElementById('sidebarStatErrors').textContent = errorCount;
+  renderToolBarChart();
+}
+
+function renderToolBarChart() {
+  const container = document.getElementById('toolBarChart');
+  const entries = Object.entries(toolCounts).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 5);
+  if (entries.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  const maxCount = entries[0][1];
+  let html = '';
+  entries.forEach(function(entry) {
+    const pct = Math.max(2, (entry[1] / maxCount) * 100);
+    html += '<div class="tool-bar-row">'
+      + '<div class="tool-bar-name" title="' + entry[0] + '">' + entry[0] + '</div>'
+      + '<div class="tool-bar-track"><div class="tool-bar-fill" style="width:' + pct + '%"></div></div>'
+      + '<div class="tool-bar-count">' + entry[1] + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ===== Event Card Rendering =====
+function createEventCard(event) {
+  const name = event.hook_event_name;
+  const cat = getCategoryForEvent(name);
+  const color = EVENT_CATEGORIES[cat] ? EVENT_CATEGORIES[cat].color : 'var(--text-muted)';
+  const icon = EVENT_ICONS[name] || '\u25CB';
+  const ts = getTimestamp(event);
+  const eid = getEventId(event);
+
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  card.dataset.eventId = eid;
+  card.dataset.timestamp = ts;
+  card.style.borderLeftColor = color;
+
+  // Row 1: icon, name, badges, timestamp
+  const row1 = document.createElement('div');
+  row1.className = 'event-card-row1';
+
+  const iconEl = document.createElement('span');
+  iconEl.className = 'event-icon';
+  iconEl.style.color = color;
+  iconEl.textContent = icon;
+  row1.appendChild(iconEl);
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'event-name';
+  nameEl.textContent = name;
+  row1.appendChild(nameEl);
+
+  const badgesEl = document.createElement('span');
+  badgesEl.className = 'event-badges';
+
+  // Tool name badge
+  if (event.tool_name) {
+    const toolBadge = document.createElement('span');
+    toolBadge.className = 'badge badge-tool';
+    toolBadge.textContent = event.tool_name;
+    badgesEl.appendChild(toolBadge);
+  }
+
+  // Duration badge
+  if (event._observer && event._observer.duration_ms != null) {
+    const dBadge = document.createElement('span');
+    dBadge.className = 'badge badge-duration ' + getDurationClass(event._observer.duration_ms);
+    dBadge.textContent = formatDuration(event._observer.duration_ms);
+    badgesEl.appendChild(dBadge);
+  }
+
+  row1.appendChild(badgesEl);
+
+  const tsEl = document.createElement('span');
+  tsEl.className = 'event-timestamp';
+  tsEl.dataset.ts = ts;
+  tsEl.textContent = formatRelativeTime(ts);
+  row1.appendChild(tsEl);
+
+  card.appendChild(row1);
+
+  // Summary row
+  const summary = document.createElement('div');
+  summary.className = 'event-summary';
+  summary.textContent = getEventSummary(event);
+  card.appendChild(summary);
+
+  // Click handler
+  card.addEventListener('click', function() {
+    selectEvent(eid);
+  });
+
+  return card;
+}
+
+function selectEvent(eid) {
+  // Deselect previous
+  const prev = document.querySelector('.event-card.selected');
+  if (prev) prev.classList.remove('selected');
+
+  selectedEventId = eid;
+
+  // Select new (card may be in DOM via virtual scroll)
+  const card = document.querySelector('.event-card[data-event-id="' + eid + '"]');
+  if (card) card.classList.add('selected');
+
+  const event = allEvents.find(function(e) { return getEventId(e) === eid; });
+  if (event) {
+    renderDetailPanel(event);
+  }
+}
+
+// Scroll to an event by id (ensures it's visible in virtual scroll)
+function scrollToEvent(eid) {
+  var idx = filteredEvents.findIndex(function(e) { return getEventId(e) === eid; });
+  if (idx < 0) return;
+  var container = document.getElementById('timelineContainer');
+  container.scrollTop = idx * VS_ITEM_HEIGHT;
+  vsForceRender();
+}
+
+// ===== Code block data store =====
+let codeBlockData = new Map();
+let codeBlockIdCounter = 0;
+
+// ===== Markdown renderer (marked.js) =====
+function renderMarkdown(text) {
+  if (!text) return '';
+  if (typeof marked !== 'undefined') {
+    return marked.parse(text);
+  }
+  // Fallback: plain text with escaped HTML
+  return '<pre>' + escHtml(text) + '</pre>';
+}
+
+// ===== Recursive field extraction =====
+function renderExtractedFields(obj, depth) {
+  if (obj == null) return '';
+  if (typeof obj !== 'object') return '';
+  depth = depth || 0;
+
+  var html = '';
+  var keys = Array.isArray(obj) ? obj.map(function(_, i) { return i; }) : Object.keys(obj);
+
+  keys.forEach(function(key) {
+    var val = obj[key];
+    if (val === undefined) return;
+    var keyLabel = Array.isArray(obj) ? '[' + key + ']' : String(key);
+
+    if (val !== null && typeof val === 'object') {
+      // Object or array — recurse
+      var count = Array.isArray(val) ? val.length + ' items' : Object.keys(val).length + ' fields';
+      html += '<div class="extracted-field">';
+      html += '<span class="extracted-field-key">' + escHtml(keyLabel) + '</span>';
+      html += ' <span class="extracted-field-meta">(' + count + ')</span>';
+      html += '<div class="extracted-field-nested">';
+      html += renderExtractedFields(val, depth + 1);
+      html += '</div>';
+      html += '</div>';
+    } else {
+      // Leaf value: string, number, boolean, null
+      var strVal = val === null ? 'null' : String(val);
+      var cbId = 'ef-' + (codeBlockIdCounter++);
+      codeBlockData.set(cbId, strVal);
+      html += '<div class="extracted-field">';
+      html += '<span class="extracted-field-key">' + escHtml(keyLabel) + '</span>';
+
+      if (strVal.length > 200) {
+        // Long text — render in scrollable block
+        html += '<div class="extracted-field-longtext">';
+        html += '<button class="copy-btn-inside" onclick="copyCodeBlock(\'' + cbId + '\', this)">Copy</button>';
+        html += '<div class="extracted-field-longtext-content">' + escHtml(strVal) + '</div>';
+        html += '</div>';
+      } else {
+        html += '<div class="extracted-field-value" onclick="copyFieldValue(\'' + cbId + '\', this)">'
+          + escHtml(strVal)
+          + ' <span class="copy-hint">copy</span></div>';
+      }
+
+      html += '</div>';
+    }
+  });
+
+  return html;
+}
+
+function renderToolDataSection(label, desc, data) {
+  var html = '<div class="detail-field">';
+  html += '<div class="collapsible-header expanded" onclick="toggleCollapsible(this)">';
+  html += '<span class="collapsible-arrow">\u25B6</span>';
+  html += '<span class="detail-field-label">' + escHtml(label) + '</span>';
+  html += (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '');
+  html += '</div>';
+  html += '<div class="collapsible-body expanded">';
+
+  // Extracted fields
+  var obj = data;
+  if (typeof data === 'string') {
+    try { obj = JSON.parse(data); } catch(e) { obj = null; }
+  }
+  if (obj && typeof obj === 'object') {
+    html += '<div class="extracted-fields-container">';
+    html += renderExtractedFields(obj, 0);
+    html += '</div>';
+  }
+
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// ===== Detail Panel =====
+function renderDetailPanel(event) {
+  const panel = document.getElementById('detailPanel');
+  const body = document.getElementById('detailBody');
+  const title = document.getElementById('detailTitle');
+
+  // Reset code block store
+  codeBlockData.clear();
+  codeBlockIdCounter = 0;
+
+  panel.classList.remove('collapsed');
+  panel.style.height = detailPanelHeight + 'px';
+
+  const name = event.hook_event_name;
+  const color = getCategoryColor(name);
+  title.innerHTML = '<span style="color:' + color + '">' + (EVENT_ICONS[name] || '') + ' ' + escHtml(name) + '</span>';
+
+  let html = '';
+
+  // Section 1: Event Info (all fields copyable)
+  html += '<div class="detail-section">';
+  html += '<div class="detail-section-title">Event Info</div>';
+  html += copyableField('Event', FIELD_DESCRIPTIONS.hook_event_name, name, '<span style="color:' + color + ';font-weight:700">' + escHtml(name) + '</span>');
+
+  const ts = getTimestamp(event);
+  html += '<div class="detail-field">'
+    + '<span class="detail-field-label">Timestamp</span>'
+    + '<span class="detail-field-desc"> -- When this event occurred</span>'
+    + '<div class="detail-field-value copyable-field" onclick="copyText(\'' + escAttr(formatAbsoluteTime(ts)) + '\', this)">'
+    + escHtml(formatAbsoluteTime(ts)) + ' <span class="detail-relative-time" data-ts="' + ts + '" style="color:var(--text-faint)">(' + formatRelativeTime(ts) + ')</span>'
+    + '<span class="copy-hint">copy</span></div></div>';
+
+  if (event.session_id) {
+    html += copyableField('Session ID', FIELD_DESCRIPTIONS.session_id, event.session_id);
+  }
+
+  if (event._observer && event._observer.event_id) {
+    html += copyableField('Event ID', FIELD_DESCRIPTIONS['_observer.event_id'], event._observer.event_id);
+  }
+  html += '</div>';
+
+  // Section 2: Context
+  const contextFields = ['cwd', 'permission_mode', 'transcript_path'];
+  const hasContext = contextFields.some(function(f) { return event[f] != null; });
+  if (hasContext) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Context</div>';
+    contextFields.forEach(function(f) {
+      if (event[f] != null) {
+        html += copyableField(f, FIELD_DESCRIPTIONS[f] || '', String(event[f]));
+      }
+    });
+    html += '</div>';
+  }
+
+  // Section 3: Tool Details
+  const isToolEvent = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest'].indexOf(name) !== -1;
+  if (isToolEvent) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Tool Details</div>';
+
+    if (event.tool_name) {
+      html += copyableField('Tool Name', FIELD_DESCRIPTIONS.tool_name, event.tool_name, '<span class="badge badge-tool">' + escHtml(event.tool_name) + '</span>');
+    }
+
+    if (event.tool_use_id) {
+      html += copyableField('Tool Use ID', FIELD_DESCRIPTIONS.tool_use_id, event.tool_use_id);
+    }
+
+    if (event.tool_input != null) {
+      html += renderToolDataSection('Tool Input', FIELD_DESCRIPTIONS.tool_input, event.tool_input);
+    }
+
+    if (event.tool_response != null) {
+      html += renderToolDataSection('Tool Response', FIELD_DESCRIPTIONS.tool_response, event.tool_response);
+    }
+
+    if (event._observer && event._observer.duration_ms != null) {
+      const dms = event._observer.duration_ms;
+      const dcls = getDurationClass(dms);
+      html += detailField('Duration', FIELD_DESCRIPTIONS['_observer.duration_ms'],
+        '<span class="badge badge-duration ' + dcls + '">' + formatDuration(dms) + '</span>');
+    }
+
+    if (event.error != null) {
+      html += copyableField('Error', FIELD_DESCRIPTIONS.error, String(event.error), '<span class="error-text">' + escHtml(String(event.error)) + '</span>');
+    }
+
+    if (event.is_interrupt != null) {
+      html += copyableField('Interrupted', FIELD_DESCRIPTIONS.is_interrupt, String(event.is_interrupt));
+    }
+
+    if (event.permission_suggestions != null) {
+      html += collapsibleJson('Permission Suggestions', FIELD_DESCRIPTIONS.permission_suggestions, highlightJSON(event.permission_suggestions), false, event.permission_suggestions);
+    }
+
+    html += '</div>';
+  }
+
+  // Section 4: Event-Specific Fields
+  const skipFields = new Set([
+    'hook_event_name', 'session_id', 'transcript_path', 'cwd', 'permission_mode',
+    'tool_name', 'tool_input', 'tool_response', 'tool_use_id', 'error', 'is_interrupt',
+    'permission_suggestions', '_observer'
+  ]);
+  const extraFields = Object.keys(event).filter(function(k) { return !skipFields.has(k); });
+  if (extraFields.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Event Fields</div>';
+    extraFields.forEach(function(f) {
+      const val = event[f];
+      if (val == null) return;
+      const desc = FIELD_DESCRIPTIONS[f] || '';
+      if (f === 'last_assistant_message' && typeof val === 'string') {
+        html += renderLastAssistantMessage(f, desc, val);
+      } else if (f === 'prompt' && typeof val === 'string') {
+        html += renderPromptBlock(f, desc, val);
+      } else if (typeof val === 'object') {
+        html += collapsibleJson(f, desc, highlightJSON(val), false, val);
+      } else {
+        html += copyableField(f, desc, String(val));
+      }
+    });
+    html += '</div>';
+  }
+
+  // Section 5: Observer metadata
+  if (event._observer) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Observer Metadata</div>';
+    Object.keys(event._observer).forEach(function(k) {
+      const val = event._observer[k];
+      if (val == null) return;
+      const descKey = '_observer.' + k;
+      const desc = FIELD_DESCRIPTIONS[descKey] || FIELD_DESCRIPTIONS._observer || '';
+      if (typeof val === 'object') {
+        html += collapsibleJson(k, desc, highlightJSON(val), false, val);
+      } else {
+        html += copyableField(k, desc, String(val));
+      }
+    });
+    html += '</div>';
+  }
+
+  // Section 6: Raw JSON
+  html += '<div class="detail-section raw-json-section">';
+  html += collapsibleJson('Raw JSON', '', highlightJSON(event), false, event);
+  html += '</div>';
+
+  body.innerHTML = html;
+}
+
+function detailField(label, desc, valueHtml) {
+  return '<div class="detail-field">'
+    + '<span class="detail-field-label">' + escHtml(label) + '</span>'
+    + (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '')
+    + '<div class="detail-field-value">' + valueHtml + '</div>'
+    + '</div>';
+}
+
+function copyableField(label, desc, rawValue, displayHtml) {
+  var display = displayHtml || escHtml(rawValue);
+  var cbId = 'cf-' + (codeBlockIdCounter++);
+  codeBlockData.set(cbId, rawValue);
+  return '<div class="detail-field">'
+    + '<span class="detail-field-label">' + escHtml(label) + '</span>'
+    + (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '')
+    + '<div class="detail-field-value copyable-field" onclick="copyFieldValue(\'' + cbId + '\', this)">'
+    + display + ' <span class="copy-hint">copy</span></div>'
+    + '</div>';
+}
+
+function collapsibleJson(label, desc, jsonHtml, startExpanded, rawValue) {
+  const expandedCls = startExpanded ? ' expanded' : '';
+  const bodyCls = startExpanded ? ' expanded' : '';
+  var cbId = 'cb-' + (codeBlockIdCounter++);
+  var rawText = typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue, null, 2);
+  codeBlockData.set(cbId, rawText);
+  return '<div class="detail-field">'
+    + '<div class="collapsible-header' + expandedCls + '" onclick="toggleCollapsible(this)">'
+    + '<span class="collapsible-arrow">\u25B6</span>'
+    + '<span class="detail-field-label">' + escHtml(label) + '</span>'
+    + (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '')
+    + '</div>'
+    + '<div class="collapsible-body' + bodyCls + '">'
+    + '<div class="json-block-wrapper">'
+    + '<button class="copy-btn-inside" onclick="copyCodeBlock(\'' + cbId + '\', this)">Copy</button>'
+    + '<div class="json-block">' + jsonHtml + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLastAssistantMessage(label, desc, text) {
+  var cbId = 'cb-' + (codeBlockIdCounter++);
+  codeBlockData.set(cbId, text);
+  var tabId = 'tab-' + cbId;
+  return '<div class="detail-field">'
+    + '<span class="detail-field-label">' + escHtml(label) + '</span>'
+    + (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '')
+    + '<div class="content-block">'
+    + '<div class="content-block-header">'
+    + '<div class="content-block-tabs">'
+    + '<button class="content-tab active" onclick="switchTab(this, \'' + tabId + '\', \'markdown\')">Text</button>'
+    + '<button class="content-tab" onclick="switchTab(this, \'' + tabId + '\', \'text\')">Markdown</button>'
+    + '</div>'
+    + '<button class="copy-btn-inside" style="position:static;opacity:1" onclick="copyCodeBlock(\'' + cbId + '\', this)">Copy</button>'
+    + '</div>'
+    + '<div class="content-block-body" id="' + tabId + '">'
+    + '<div class="content-tab-panel active" data-panel="markdown"><div class="md-content">' + renderMarkdown(text) + '</div></div>'
+    + '<div class="content-tab-panel" data-panel="text"><pre>' + escHtml(text) + '</pre></div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderPromptBlock(label, desc, text) {
+  var cbId = 'cb-' + (codeBlockIdCounter++);
+  codeBlockData.set(cbId, text);
+  return '<div class="detail-field">'
+    + '<span class="detail-field-label">' + escHtml(label) + '</span>'
+    + (desc ? '<span class="detail-field-desc"> -- ' + escHtml(desc) + '</span>' : '')
+    + '<div class="json-block-wrapper" style="margin-top:4px">'
+    + '<button class="copy-btn-inside" onclick="copyCodeBlock(\'' + cbId + '\', this)">Copy</button>'
+    + '<div class="json-block" style="white-space:pre-wrap;word-break:break-word">' + escHtml(text) + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function switchTab(btn, containerId, panelName) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  // Update tab buttons
+  var header = btn.parentElement;
+  header.querySelectorAll('.content-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  // Update panels
+  container.querySelectorAll('.content-tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.dataset.panel === panelName);
+  });
+}
+
+function toggleCollapsible(header) {
+  header.classList.toggle('expanded');
+  const body = header.nextElementSibling;
+  body.classList.toggle('expanded');
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escAttr(str) {
+  return escHtml(str).replace(/'/g, '&#39;');
+}
+
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(function() {
+    if (el) {
+      el.style.color = 'var(--cat-tool)';
+      setTimeout(function() { el.style.color = ''; }, 800);
+    }
+  });
+}
+
+function copyFieldValue(cbId, el) {
+  var val = codeBlockData.get(cbId);
+  if (val == null) return;
+  navigator.clipboard.writeText(val).then(function() {
+    el.style.color = 'var(--cat-tool)';
+    setTimeout(function() { el.style.color = ''; }, 800);
+  });
+}
+
+function copyCodeBlock(cbId, btn) {
+  var val = codeBlockData.get(cbId);
+  if (val == null) return;
+  var origText = btn.textContent;
+  navigator.clipboard.writeText(val).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = origText;
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+function closeDetailPanel() {
+  document.getElementById('detailPanel').classList.add('collapsed');
+  selectedEventId = null;
+  var prev = document.querySelector('.event-card.selected');
+  if (prev) prev.classList.remove('selected');
+}
+
+// ===== SSE Connection =====
+function connectSSE() {
+  if (eventSource) {
+    eventSource.close();
+  }
+
+  eventSource = new EventSource('/api/events/stream');
+  const indicator = document.getElementById('connectionIndicator');
+  indicator.classList.remove('error');
+  indicator.title = 'Connected';
+
+  eventSource.onmessage = function(e) {
+    let event;
+    try {
+      event = JSON.parse(e.data);
+    } catch (err) {
+      return;
+    }
+    handleEvent(event);
+  };
+
+  eventSource.addEventListener('clear', function() {
+    resetState();
+  });
+
+  eventSource.onerror = function() {
+    indicator.classList.add('error');
+    indicator.title = 'Reconnecting...';
+  };
+
+  eventSource.onopen = function() {
+    indicator.classList.remove('error');
+    indicator.title = 'Connected';
+  };
+}
+
+function handleEvent(event) {
+  const name = event.hook_event_name;
+  const eid = getEventId(event);
+  const ts = getTimestamp(event);
+
+  // Duration matching
+  if (name === 'PreToolUse' && event.tool_use_id) {
+    preToolTimestamps.set(event.tool_use_id, ts);
+  }
+  if ((name === 'PostToolUse' || name === 'PostToolUseFailure') && event.tool_use_id) {
+    const preTs = preToolTimestamps.get(event.tool_use_id);
+    if (preTs) {
+      const duration = ts - preTs;
+      if (!event._observer) event._observer = {};
+      event._observer.duration_ms = duration;
+      preToolTimestamps.delete(event.tool_use_id);
+
+      // Also update the matching PreToolUse card if visible
+      updatePreToolDuration(event.tool_use_id, duration);
+    }
+  }
+
+  allEvents.push(event);
+
+  // Track stats
+  if (event.session_id) sessionIds.add(event.session_id);
+  if (name === 'PreToolUse') {
+    toolCallCount++;
+    if (event.tool_name) {
+      toolCounts[event.tool_name] = (toolCounts[event.tool_name] || 0) + 1;
+    }
+  }
+  if (name === 'StopFailure' || name === 'PostToolUseFailure') {
+    errorCount++;
+  }
+
+  updateStats();
+  updateDynamicFilters(event);
+  updateEventTypeFilterCounts();
+
+  // Add to filtered list if passes filters
+  if (eventMatchesFilters(event)) {
+    filteredEvents.unshift(event); // newest first
+
+    if (autoScroll) {
+      document.getElementById('timelineContainer').scrollTop = 0;
+      vsForceRender();
+    } else {
+      missedEventsCount++;
+      showNewEventsBadge();
+      // Shift range down since a new item was prepended above
+      vsRangeStart++;
+      vsRangeEnd++;
+      vsForceRender();
+    }
+  }
+}
+
+function updatePreToolDuration(toolUseId, duration) {
+  // Find the PreToolUse event
+  const preEvent = allEvents.find(function(e) {
+    return e.hook_event_name === 'PreToolUse' && e.tool_use_id === toolUseId;
+  });
+  if (!preEvent) return;
+  // We don't add duration to PreToolUse events, only to Post events
+}
+
+function resetState() {
+  allEvents = [];
+  filteredEvents = [];
+  selectedEventId = null;
+  preToolTimestamps.clear();
+  toolCounts = {};
+  sessionIds.clear();
+  toolCallCount = 0;
+  errorCount = 0;
+  missedEventsCount = 0;
+  vsRangeStart = 0;
+  vsRangeEnd = 0;
+
+  vsForceRender();
+  closeDetailPanel();
+  updateStats();
+  hideNewEventsBadge();
+  renderToolNameFilters();
+  renderSessionFilters();
+  updateEventTypeFilterCounts();
+}
+
+// ===== Dynamic Filters =====
+let knownToolNames = {};
+let knownSessions = {};
+
+function updateDynamicFilters(event) {
+  let changed = false;
+  if (event.tool_name) {
+    if (!knownToolNames[event.tool_name]) {
+      knownToolNames[event.tool_name] = 0;
+      changed = true;
+    }
+    knownToolNames[event.tool_name]++;
+    if (!changed) {
+      // Just update count
+      updateToolNameCount(event.tool_name);
+    }
+  }
+  if (event.session_id) {
+    if (!knownSessions[event.session_id]) {
+      knownSessions[event.session_id] = 0;
+      changed = true;
+    }
+    knownSessions[event.session_id]++;
+    if (!changed) {
+      updateSessionCount(event.session_id);
+    }
+  }
+  if (changed) {
+    renderToolNameFilters();
+    renderSessionFilters();
+  }
+}
+
+function renderToolNameFilters() {
+  const container = document.getElementById('toolNameFilters');
+  const names = Object.keys(knownToolNames).sort();
+  if (names.length === 0) {
+    container.innerHTML = '<div style="font-size:0.846rem;color:var(--text-faint);padding:4px 0;">No tool events yet</div>';
+    return;
+  }
+  let html = '';
+  names.forEach(function(name) {
+    const checked = filters.tools.has(name) ? ' checked' : '';
+    html += '<label class="filter-item">'
+      + '<input type="checkbox"' + checked + ' data-tool="' + escAttr(name) + '" onchange="toggleToolFilter(this)">'
+      + '<span>' + escHtml(name) + '</span>'
+      + '<span class="count" data-tool-count="' + escAttr(name) + '">' + knownToolNames[name] + '</span>'
+      + '</label>';
+  });
+  container.innerHTML = html;
+}
+
+function updateToolNameCount(toolName) {
+  const el = document.querySelector('[data-tool-count="' + toolName + '"]');
+  if (el) el.textContent = knownToolNames[toolName];
+}
+
+function renderSessionFilters() {
+  const container = document.getElementById('sessionFilters');
+  const ids = Object.keys(knownSessions).sort();
+  if (ids.length === 0) {
+    container.innerHTML = '<div style="font-size:0.846rem;color:var(--text-faint);padding:4px 0;">No sessions yet</div>';
+    return;
+  }
+  let html = '';
+  ids.forEach(function(sid) {
+    const checked = filters.sessions.has(sid) ? ' checked' : '';
+    const short = sid.slice(0, 8);
+    html += '<label class="filter-item">'
+      + '<input type="checkbox"' + checked + ' data-session="' + escAttr(sid) + '" onchange="toggleSessionFilter(this)">'
+      + '<span title="' + escAttr(sid) + '">' + escHtml(short) + '</span>'
+      + '<span class="count" data-session-count="' + escAttr(sid) + '">' + knownSessions[sid] + '</span>'
+      + '</label>';
+  });
+  container.innerHTML = html;
+}
+
+function updateSessionCount(sid) {
+  const el = document.querySelector('[data-session-count="' + sid + '"]');
+  if (el) el.textContent = knownSessions[sid];
+}
+
+function toggleToolFilter(cb) {
+  const name = cb.dataset.tool;
+  if (cb.checked) {
+    filters.tools.add(name);
+  } else {
+    filters.tools.delete(name);
+  }
+  refilterTimeline();
+}
+
+function toggleSessionFilter(cb) {
+  const sid = cb.dataset.session;
+  if (cb.checked) {
+    filters.sessions.add(sid);
+  } else {
+    filters.sessions.delete(sid);
+  }
+  refilterTimeline();
+}
+
+// ===== Event Type Filters =====
+function buildEventTypeFilters() {
+  const container = document.getElementById('eventTypeFilters');
+  let html = '';
+  Object.entries(EVENT_CATEGORIES).forEach(function(entry) {
+    const catKey = entry[0];
+    const cat = entry[1];
+    html += '<div class="filter-group">';
+    html += '<div class="filter-group-header" onclick="toggleCategoryFilter(\'' + catKey + '\', this)">';
+    html += '<span class="filter-group-dot" style="background:' + cat.color + '"></span>';
+    html += '<span>' + cat.label + '</span>';
+    html += '</div>';
+    html += '<div class="filter-checkbox-list">';
+    cat.types.forEach(function(type) {
+      html += '<label class="filter-item">'
+        + '<input type="checkbox" data-event-type="' + type + '" onchange="toggleTypeFilter(this)">'
+        + '<span>' + type + '</span>'
+        + '<span class="count" data-type-count="' + type + '">0</span>'
+        + '</label>';
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function updateEventTypeFilterCounts() {
+  const counts = {};
+  allEvents.forEach(function(e) {
+    const n = e.hook_event_name;
+    counts[n] = (counts[n] || 0) + 1;
+  });
+  document.querySelectorAll('[data-type-count]').forEach(function(el) {
+    const type = el.dataset.typeCount;
+    el.textContent = counts[type] || 0;
+  });
+}
+
+function toggleTypeFilter(cb) {
+  const type = cb.dataset.eventType;
+  if (cb.checked) {
+    filters.types.add(type);
+  } else {
+    filters.types.delete(type);
+  }
+  refilterTimeline();
+}
+
+function toggleCategoryFilter(catKey, headerEl) {
+  const cat = EVENT_CATEGORIES[catKey];
+  if (!cat) return;
+  // Check if all are already checked
+  const allChecked = cat.types.every(function(t) { return filters.types.has(t); });
+  cat.types.forEach(function(t) {
+    if (allChecked) {
+      filters.types.delete(t);
+    } else {
+      filters.types.add(t);
+    }
+  });
+  // Update checkboxes
+  cat.types.forEach(function(t) {
+    const cb = document.querySelector('input[data-event-type="' + t + '"]');
+    if (cb) cb.checked = filters.types.has(t);
+  });
+  refilterTimeline();
+}
+
+// ===== New Events Badge =====
+function showNewEventsBadge() {
+  const badge = document.getElementById('newEventsBadge');
+  badge.textContent = missedEventsCount + ' new event' + (missedEventsCount !== 1 ? 's' : '');
+  badge.classList.add('visible');
+}
+
+function hideNewEventsBadge() {
+  const badge = document.getElementById('newEventsBadge');
+  badge.classList.remove('visible');
+  missedEventsCount = 0;
+}
+
+// ===== Virtual Scroll Engine =====
+function vsForceRender() {
+  vsRangeStart = 0;
+  vsRangeEnd = 0;
+  vsRender();
+}
+
+function vsRender() {
+  var container = document.getElementById('timelineContainer');
+  var timeline = document.getElementById('timeline');
+  var total = filteredEvents.length;
+
+  // Empty state
+  var empty = document.getElementById('timelineEmpty');
+  if (total === 0) {
+    timeline.innerHTML =
+      '<div class="timeline-empty" id="timelineEmpty">'
+      + '<div class="timeline-empty-icon">&#9673;</div>'
+      + '<div>' + (allEvents.length === 0 ? 'Waiting for events...' : 'No matching events') + '</div>'
+      + '<div style="font-size:0.923rem;color:var(--text-faint);">'
+      + (allEvents.length === 0 ? 'Events will appear here as hooks fire' : 'Try changing your filters')
+      + '</div></div>';
+    return;
+  }
+
+  var viewportH = container.clientHeight;
+  var scrollTop = container.scrollTop;
+  var itemH = VS_ITEM_HEIGHT;
+  var totalHeight = total * itemH;
+
+  // Calculate visible range
+  var startIdx = Math.max(0, Math.floor(scrollTop / itemH) - VS_BUFFER);
+  var endIdx = Math.min(total, Math.ceil((scrollTop + viewportH) / itemH) + VS_BUFFER);
+
+  // Skip if range unchanged
+  if (startIdx === vsRangeStart && endIdx === vsRangeEnd && timeline.querySelector('.event-card')) return;
+  vsRangeStart = startIdx;
+  vsRangeEnd = endIdx;
+
+  // Build DOM fragment
+  var frag = document.createDocumentFragment();
+
+  // Top spacer
+  var topSpacer = document.createElement('div');
+  topSpacer.id = 'vs-spacer-top';
+  topSpacer.style.height = (startIdx * itemH) + 'px';
+  frag.appendChild(topSpacer);
+
+  // Render visible cards
+  for (var i = startIdx; i < endIdx; i++) {
+    var card = createEventCard(filteredEvents[i]);
+    card.style.height = itemH + 'px';
+    card.style.overflow = 'hidden';
+    if (selectedEventId && getEventId(filteredEvents[i]) === selectedEventId) {
+      card.classList.add('selected');
+    }
+    frag.appendChild(card);
+  }
+
+  // Bottom spacer
+  var botSpacer = document.createElement('div');
+  botSpacer.id = 'vs-spacer-bot';
+  botSpacer.style.height = Math.max(0, (total - endIdx) * itemH) + 'px';
+  frag.appendChild(botSpacer);
+
+  timeline.innerHTML = '';
+  timeline.appendChild(frag);
+}
+
+function onTimelineScroll() {
+  if (vsScrollRAF) return;
+  vsScrollRAF = requestAnimationFrame(function() {
+    vsScrollRAF = null;
+    vsRender();
+    // Auto-scroll detection
+    var container = document.getElementById('timelineContainer');
+    if (container.scrollTop < 20) {
+      autoScroll = true;
+      hideNewEventsBadge();
+      document.getElementById('btnAutoScroll').classList.add('active');
+    } else {
+      autoScroll = false;
+      document.getElementById('btnAutoScroll').classList.remove('active');
+    }
+  });
+}
+
+// ===== Auto-scroll =====
+function setupAutoScroll() {
+  var container = document.getElementById('timelineContainer');
+  container.addEventListener('scroll', onTimelineScroll);
+}
+
+// ===== Theme =====
+function loadTheme() {
+  const saved = localStorage.getItem('hook-observer-theme');
+  const theme = saved || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.style.colorScheme = theme;
+  updateThemeIcon(theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.documentElement.style.colorScheme = next;
+  localStorage.setItem('hook-observer-theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  // Sun for dark (switch to light), Moon for light (switch to dark)
+  document.getElementById('themeIcon').textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+
+// ===== Relative Time Updater =====
+function startTimeUpdater() {
+  setInterval(function() {
+    document.querySelectorAll('.event-timestamp[data-ts]').forEach(function(el) {
+      el.textContent = formatRelativeTime(parseInt(el.dataset.ts, 10));
+    });
+    document.querySelectorAll('.detail-relative-time[data-ts]').forEach(function(el) {
+      el.textContent = '(' + formatRelativeTime(parseInt(el.dataset.ts, 10)) + ')';
+    });
+  }, 1000);
+}
+
+// ===== Resize Detail Panel =====
+function setupDetailResize() {
+  const handle = document.getElementById('detailResizeHandle');
+  const panel = document.getElementById('detailPanel');
+  const mainArea = document.querySelector('.main-area');
+  let startY, startH;
+
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    startY = e.clientY;
+    startH = panel.offsetHeight;
+
+    function onMouseMove(e) {
+      const diff = startY - e.clientY;
+      const newH = Math.max(100, Math.min(mainArea.offsetHeight - 100, startH + diff));
+      panel.style.height = newH + 'px';
+      detailPanelHeight = newH;
+    }
+
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+}
+
+// ===== Header Controls =====
+function setupControls() {
+  document.getElementById('btnTheme').addEventListener('click', toggleTheme);
+
+  document.getElementById('btnExport').addEventListener('click', function() {
+    fetch('/api/events/export')
+      .then(function(r) { return r.blob(); })
+      .then(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hook-events-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      })
+      .catch(function(err) {
+        console.error('Export failed:', err);
+      });
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function() {
+    if (confirm('Clear all events?')) {
+      fetch('/api/events', { method: 'DELETE' })
+        .then(function() {
+          resetState();
+        })
+        .catch(function(err) {
+          console.error('Clear failed:', err);
+        });
+    }
+  });
+
+  document.getElementById('btnAutoScroll').addEventListener('click', function() {
+    autoScroll = true;
+    document.getElementById('timelineContainer').scrollTop = 0;
+    hideNewEventsBadge();
+    this.classList.add('active');
+  });
+  // Set initial active state
+  document.getElementById('btnAutoScroll').classList.add('active');
+
+  document.getElementById('detailClose').addEventListener('click', closeDetailPanel);
+
+  document.getElementById('newEventsBadge').addEventListener('click', function() {
+    autoScroll = true;
+    document.getElementById('timelineContainer').scrollTop = 0;
+    hideNewEventsBadge();
+    document.getElementById('btnAutoScroll').classList.add('active');
+  });
+}
+
+// ===== Search =====
+function setupSearch() {
+  const input = document.getElementById('searchInput');
+  input.addEventListener('input', debounce(function() {
+    filters.search = input.value.trim();
+    refilterTimeline();
+  }, 200));
+}
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', function() {
+  loadTheme();
+  buildEventTypeFilters();
+  setupControls();
+  setupSearch();
+  setupAutoScroll();
+  setupDetailResize();
+  startTimeUpdater();
+  connectSSE();
+});
+</script>
+</body>
+</html>

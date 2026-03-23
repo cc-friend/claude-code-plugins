@@ -1,0 +1,17 @@
+{
+  "name": "hook-observer-marketplace",
+  "owner": {
+    "name": "Hook Observer"
+  },
+  "metadata": {
+    "description": "Claude Code Hook Observer — real-time dashboard for all hook events",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "hook-observer",
+      "source": "./",
+      "description": "Real-time dashboard for observing all Claude Code hook events"
+    }
+  ]
+}
