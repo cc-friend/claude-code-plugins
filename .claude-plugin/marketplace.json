@@ -4,14 +4,14 @@
     "name": "Hook Observer"
   },
   "metadata": {
-    "description": "Claude Code Hook Observer — real-time dashboard for all hook events",
+    "description": "Claude Code Hook Observer — logs all hook events to JSONL for debugging and analysis",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "hook-observer",
       "source": "./",
-      "description": "Real-time dashboard for observing all Claude Code hook events"
+      "description": "Logs all Claude Code hook events to JSONL for debugging and analysis"
     }
   ]
 }

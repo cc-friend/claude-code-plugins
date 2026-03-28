@@ -22,7 +22,7 @@ function main() {
         input = {};
       }
 
-      const name = input.name || 'unnamed';
+      const name = (input.name || 'unnamed').replace(/[^a-zA-Z0-9_-]/g, '_');
       const cwd = input.cwd || process.cwd();
 
       // Log the event via hook-handler.js in background (fire-and-forget)
@@ -35,14 +35,28 @@ function main() {
       child.stdin.end();
       child.unref();
 
-      // Set worktree path
-      const worktreePath = path.join(cwd, '.claude', 'worktrees', name);
+      // Resolve repo root so worktree path is stable regardless of cwd
+      let repoRoot;
+      try {
+        repoRoot = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }).toString().trim();
+      } catch {
+        repoRoot = cwd;
+      }
+
+      // Set worktree path with safety check
+      const worktreesDir = path.join(repoRoot, '.claude', 'worktrees');
+      const worktreePath = path.resolve(worktreesDir, name);
+      if (!worktreePath.startsWith(path.resolve(worktreesDir) + path.sep)) {
+        throw new Error(`Invalid worktree name: ${input.name}`);
+      }
 
       // Create parent directory
       fs.mkdirSync(path.dirname(worktreePath), { recursive: true });
 
       // Create git worktree (all git output to stderr)
-      execFileSync('git', ['-C', cwd, 'worktree', 'add', worktreePath, 'HEAD'], {
+      execFileSync('git', ['-C', repoRoot, 'worktree', 'add', worktreePath, 'HEAD'], {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 

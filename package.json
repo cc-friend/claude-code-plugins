@@ -1,0 +1,23 @@
+{
+  "name": "claude-code-hook-observer",
+  "version": "1.0.0",
+  "description": "Claude Code plugin that logs all 22 hook events to JSONL",
+  "files": [
+    "scripts/",
+    "hooks/",
+    ".claude-plugin/"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "hooks",
+    "observer",
+    "plugin"
+  ],
+  "author": "Tom Chen (https://tomchen.org)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolsu/claude-code-hook-observer.git"
+  }
+}

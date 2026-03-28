@@ -1,7 +1,7 @@
 {
   "name": "hook-observer",
   "version": "1.0.0",
-  "description": "Real-time dashboard for observing all Claude Code hook events",
+  "description": "Logs all Claude Code hook events to JSONL for debugging and analysis",
   "author": {
     "name": "Hook Observer"
   },
