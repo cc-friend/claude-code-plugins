@@ -1,6 +1,6 @@
-# Tom Chen 的 Claude Code 插件集
+# # Hook Observer - Claude Code 插件
 
-Tom Chen 的一系列实用 Claude Code 工具和插件。目前仅包含 Hook Observer 插件。
+Tom Chen 的实用 Claude Code 工具和插件合集。目前仅包含 Hook Observer 插件。
 
 [English](README.md)
 

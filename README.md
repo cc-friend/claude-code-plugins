@@ -1,4 +1,4 @@
-# Claude Code Plugins
+# Hook Observer - Claude Code Plugin
 
 A collection of Useful Claude Code tools and plugins by Tom Chen. For now it only contains the Hook Observer plugin.
 
