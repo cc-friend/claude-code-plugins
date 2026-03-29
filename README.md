@@ -1,31 +1,41 @@
-# Claude Code Hook Observer
+# Claude Code Plugins
+
+A collection of Useful Claude Code tools and plugins by Tom Chen. For now it only contains the Hook Observer plugin.
+
+[中文](README.zh.md)
+
+<!-- ## Add Marketplace
+
+```bash
+claude plugin marketplace add toolsu/claude-code-plugins
+```
+
+## Plugins
+
+| Plugin | Description |
+|--------|-------------|
+| [hook-observer](#hook-observer) | Captures all 22 hook events and logs them to JSONL |
+
+--- -->
+
+## Hook Observer
 
 A Claude Code plugin that captures **all 22 hook events** and logs them to `~/.claude/hook-observer-data/events.jsonl`.
 
 Useful for debugging hooks when developing plugins, keeping history, and learning how Claude Code works under the hood.
 
-## Install
+To view these events in a real-time web dashboard, use my [Claude Code Dashboard](https://github.com/toolsu/claude-code-dashboard).
+
+### Install
 
 ```bash
-claude plugin marketplace add toolsu/claude-code-hook-observer
-claude plugin install hook-observer@hook-observer-marketplace
+claude plugin marketplace add toolsu/claude-code-plugins
+claude plugin install hook-observer@toolsu
 ```
 
-## What It Does
+### Architecture
 
 Once installed, every Claude Code hook event is logged to `~/.claude/hook-observer-data/events.jsonl` as JSONL (one JSON object per line), enriched with `_observer` metadata (event ID, timestamp).
-
-To view these events in a real-time web dashboard, use [CC Dashboard](https://github.com/toolsu/claude-code-dashboard).
-
-## Development
-
-```bash
-claude --plugin-dir /path/to/claude-code-hook-observer
-```
-
-This loads the plugin for a single session without installing it.
-
-## Architecture
 
 ```
 Claude Code hook event (JSON via stdin)
@@ -42,7 +52,7 @@ scripts/hook-handler.js    Enriches with metadata, appends to JSONL
 
 All hooks run with `async: true` (except `WorktreeCreate`) so they never slow down Claude Code.
 
-## Supported Events
+### Supported Events
 
 | Category | Event | Description |
 |----------|-------|-------------|
@@ -68,6 +78,20 @@ All hooks run with `async: true` (except `WorktreeCreate`) so they never slow do
 | MCP | `Elicitation` | MCP server requests input |
 | MCP | `ElicitationResult` | User responds to MCP input |
 | Notification | `Notification` | Claude Code sends notification |
+
+### Uninstallation
+
+```bash
+claude plugin uninstall hook-observer
+```
+
+### Development
+
+```bash
+claude --plugin-dir /path/to/claude-code-plugins/hook-observer
+```
+
+This loads the plugin for a single session without installing it (uninstallation would not be necessary).
 
 ## License
 

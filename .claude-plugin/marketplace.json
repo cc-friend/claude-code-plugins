@@ -1,16 +1,16 @@
 {
-  "name": "hook-observer-marketplace",
+  "name": "toolsu",
   "owner": {
-    "name": "Hook Observer"
+    "name": "Tom Chen"
   },
   "metadata": {
-    "description": "Claude Code Hook Observer — logs all hook events to JSONL for debugging and analysis",
+    "description": "Tom Chen's Useful Claude Code Tools & Plugins",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "hook-observer",
-      "source": "./",
+      "source": "./hook-observer",
       "description": "Logs all Claude Code hook events to JSONL for debugging and analysis"
     }
   ]

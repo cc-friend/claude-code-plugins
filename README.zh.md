@@ -1,31 +1,41 @@
-# Claude Code Hook Observer
+# Tom Chen 的 Claude Code 插件集
+
+Tom Chen 的一系列实用 Claude Code 工具和插件。目前仅包含 Hook Observer 插件。
+
+[English](README.md)
+
+<!-- ## 添加 Marketplace
+
+```bash
+claude plugin marketplace add toolsu/claude-code-plugins
+```
+
+## 插件列表
+
+| 插件 | 描述 |
+|------|------|
+| [hook-observer](#hook-observer) | 捕获全部 22 个 hook 事件并记录到 JSONL |
+
+--- -->
+
+## Hook Observer
 
 一个 Claude Code 插件，捕获**全部 22 个 hook 事件**并记录到 `~/.claude/hook-observer-data/events.jsonl`。
 
 适用于开发插件时调试 hook、保留历史记录，以及了解 Claude Code 的内部运作原理。
 
-## 安装
+如需在实时 Web 仪表盘中查看这些事件，请使用 [Claude Code Dashboard](https://github.com/toolsu/claude-code-dashboard)。
+
+### 安装
 
 ```bash
-claude plugin marketplace add toolsu/claude-code-hook-observer
-claude plugin install hook-observer@hook-observer-marketplace
+claude plugin marketplace add toolsu/claude-code-plugins
+claude plugin install hook-observer@toolsu
 ```
 
-## 功能说明
+### 架构
 
 安装后，每个 Claude Code hook 事件都会以 JSONL 格式（每行一个 JSON 对象）记录到 `~/.claude/hook-observer-data/events.jsonl`，并附带 `_observer` 元数据（事件 ID、时间戳）。
-
-如需在实时 Web 仪表盘中查看这些事件，请使用 [CC Dashboard](https://github.com/toolsu/claude-code-dashboard)。
-
-## 开发
-
-```bash
-claude --plugin-dir /path/to/claude-code-hook-observer
-```
-
-这会在单次会话中加载插件，无需安装。
-
-## 架构
 
 ```
 Claude Code hook 事件（通过 stdin 传入 JSON）
@@ -42,7 +52,7 @@ scripts/hook-handler.js    添加元数据，追加写入 JSONL
 
 所有 hook 均以 `async: true` 运行（`WorktreeCreate` 除外），因此不会拖慢 Claude Code。
 
-## 支持的事件
+### 支持的事件
 
 | 分类 | 事件 | 描述 |
 |------|------|------|
@@ -68,6 +78,20 @@ scripts/hook-handler.js    添加元数据，追加写入 JSONL
 | MCP | `Elicitation` | MCP 服务器请求输入 |
 | MCP | `ElicitationResult` | 用户响应 MCP 输入 |
 | 通知 | `Notification` | Claude Code 发送通知 |
+
+### 卸载
+
+```bash
+claude plugin uninstall hook-observer
+```
+
+### 开发
+
+```bash
+claude --plugin-dir /path/to/claude-code-plugins/hook-observer
+```
+
+这会在单次会话中加载插件，无需安装（也无需卸载）。
 
 ## 许可证
 
