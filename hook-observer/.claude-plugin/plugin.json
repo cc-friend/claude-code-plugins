@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Logs all Claude Code hook events to JSONL for debugging and analysis",
   "author": {
-    "name": "Hook Observer"
+    "name": "Tom Chen"
   },
   "license": "MIT",
   "hooks": "./hooks/hooks.json"
