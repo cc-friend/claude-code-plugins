@@ -24,7 +24,7 @@ A Claude Code plugin that captures **all 22 hook events** and logs them to `~/.c
 
 Useful for debugging hooks when developing plugins, keeping history, and learning how Claude Code works under the hood.
 
-To view these events in a real-time web dashboard, use my [Claude Code Dashboard](https://github.com/toolsu/claude-code-dashboard).
+To view these events in a real-time web dashboard, use my [CC Dashboard for Claude Code](https://github.com/toolsu/ccdashboard).
 
 ### Install
 
