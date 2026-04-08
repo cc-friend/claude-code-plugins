@@ -7,7 +7,7 @@ A collection of Useful Claude Code tools and plugins by Tom Chen. For now it onl
 <!-- ## Add Marketplace
 
 ```bash
-claude plugin marketplace add toolsu/claude-code-plugins
+claude plugin marketplace add cc-friend/claude-code-plugins
 ```
 
 ## Plugins
@@ -24,13 +24,13 @@ A Claude Code plugin that captures **all 22 hook events** and logs them to `~/.c
 
 Useful for debugging hooks when developing plugins, keeping history, and learning how Claude Code works under the hood.
 
-To view these events in a real-time web dashboard, use my [CC Dashboard for Claude Code](https://github.com/toolsu/ccdashboard).
+To view these events in a real-time web dashboard, use my [CC Dashboard for Claude Code](https://github.com/cc-friend/ccfriend).
 
 ### Install
 
 ```bash
-claude plugin marketplace add toolsu/claude-code-plugins
-claude plugin install hook-observer@toolsu
+claude plugin marketplace add cc-friend/claude-code-plugins
+claude plugin install hook-observer@cc-friend
 ```
 
 ### Architecture
