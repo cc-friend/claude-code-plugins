@@ -24,7 +24,7 @@ claude plugin marketplace add cc-friend/claude-code-plugins
 
 适用于开发插件时调试 hook、保留历史记录，以及了解 Claude Code 的内部运作原理。
 
-如需在实时 Web 仪表盘中查看这些事件，请使用我的 [CC仪表盘（Claude Code 仪表盘）](https://github.com/cc-friend/ccfriend)。
+如需在实时 Web app 中查看这些事件，请使用我的 [CC之友（CC Friend / Claude Code Friend）](https://github.com/cc-friend/ccfriend)。
 
 ### 安装
 
